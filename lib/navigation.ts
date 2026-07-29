@@ -1,6 +1,5 @@
 import {
   Bell,
-  Gamepad2,
   LibraryBig,
   Receipt,
   Store,
@@ -23,10 +22,6 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/wallet", label: "Wallet", icon: Wallet, primary: true },
   { href: "/notifications", label: "Notifications", icon: Bell, primary: true },
   { href: "/orders", label: "Orders", icon: Receipt },
-]
-
-export const DEVELOPER_NAV: NavItem[] = [
-  { href: "/developer", label: "My games", icon: Gamepad2 },
 ]
 
 /**

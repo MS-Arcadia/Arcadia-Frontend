@@ -76,8 +76,10 @@ function hrefFor(note: Notification): string | null {
   switch (note.subject_type) {
     case "GAME":
       return `/games/${note.subject_id}`
+    // Both land on the list rather than on a per-order route: there is no
+    // /orders/[id] page yet, and a link to a 404 is worse than a link to the list
+    // the order is visible in.
     case "ORDER":
-      return `/orders/${note.subject_id}`
     case "INSTALMENT_PLAN":
       return "/orders"
     default:
