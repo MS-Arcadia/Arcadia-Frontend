@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { Bell, Search, Wallet } from "lucide-react"
 
+import { AccountMenu } from "@/components/layout/account-menu"
 import { Logo } from "@/components/brand/logo"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -98,6 +99,8 @@ export function TopBar() {
             />
             <TooltipContent>Notifications</TooltipContent>
           </Tooltip>
+
+          <AccountMenu />
         </div>
       </div>
     </header>

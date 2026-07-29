@@ -68,3 +68,20 @@ export async function getInstalmentPlan(
   const { data } = await http.get<InstalmentPlan>(API.orders.plan(orderId))
   return data
 }
+
+/**
+ * Pay the next instalment now.
+ *
+ * **Not an endpoint the order service has.** It collects on a schedule, so there is
+ * nothing to call — the mock provides this so the plan flow can be exercised
+ * without waiting a month, and the order page says as much next to the button.
+ * When a real "pay early" endpoint exists, only this function changes.
+ */
+export async function payNextInstalment(
+  orderId: string
+): Promise<InstalmentPlan> {
+  const { data } = await http.post<InstalmentPlan>(
+    `${API.orders.plan(orderId)}/pay-next`
+  )
+  return data
+}

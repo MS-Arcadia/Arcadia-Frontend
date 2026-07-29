@@ -7,16 +7,18 @@ import type {
   TokenPair,
   UserSummary,
 } from "@/types/auth.api.type"
+import type { Role } from "@/types/common.api.type"
 
 export const authKeys = {
   all: ["auth"] as const,
-  me: () => ["auth", "me"] as const,
+  profile: (userId: string) => ["auth", "profile", userId] as const,
+  directory: () => ["auth", "directory"] as const,
 }
 
 /**
  * Registering does not sign anybody in — it returns a `PENDING` user and no
- * token. Requirement 1.1 puts an administrator's approval between the two, so
- * the UI has to say so rather than dropping the person on a dashboard.
+ * token. Requirement 1.1 puts an administrator's approval between the two, so the
+ * UI has to say so rather than dropping the person on a dashboard.
  */
 export async function register(body: RegisterBody): Promise<RegisterResponse> {
   const { data } = await http.post<RegisterResponse>(API.auth.register, body)
@@ -32,7 +34,100 @@ export async function logout(refreshToken: string): Promise<void> {
   await http.post(API.auth.logout, { refresh_token: refreshToken })
 }
 
-export async function getMe(): Promise<UserSummary> {
-  const { data } = await http.get<UserSummary>(API.auth.me)
+/** By id — the auth service has no "me" route, so the id comes from the token. */
+export async function getProfile(userId: string): Promise<UserSummary> {
+  const { data } = await http.get<UserSummary>(API.auth.profile(userId))
+  return data
+}
+
+export async function requestRole(
+  requestedRole: Role
+): Promise<{ request_id: string }> {
+  const { data } = await http.post<{ request_id: string }>(
+    API.auth.requestRole,
+    {
+      requested_role: requestedRole,
+    }
+  )
+  return data
+}
+
+export interface RoleRequestView {
+  request_id: string
+  user_id: string
+  display_name: string
+  email: string
+  requested_role: Role
+  status: string
+  note: string
+  created_at: string
+}
+
+export interface Directory {
+  items: UserSummary[]
+  roleRequests: RoleRequestView[]
+}
+
+/**
+ * The account directory.
+ *
+ * The auth service has no query endpoint for this — its admin routes all act on a
+ * user you already know the id of. The admin screen needs a list, so the mock
+ * provides one and the page says as much. When somebody adds a real search
+ * endpoint, only this function changes.
+ */
+export async function getDirectory(): Promise<Directory> {
+  const { data } = await http.get<Directory>(API.auth.users)
+  return data
+}
+
+export async function decideRegistration(
+  userId: string,
+  approve: boolean
+): Promise<UserSummary> {
+  const { data } = await http.post<UserSummary>(
+    API.auth.decideRegistration(userId),
+    { approve }
+  )
+  return data
+}
+
+export async function decideRoleRequest(
+  requestId: string,
+  approve: boolean,
+  note = ""
+): Promise<RoleRequestView> {
+  const { data } = await http.post<RoleRequestView>(
+    API.auth.decideRoleRequest(requestId),
+    {
+      approve,
+      note,
+    }
+  )
+  return data
+}
+
+export async function grantRole(
+  userId: string,
+  newRole: Role
+): Promise<UserSummary> {
+  const { data } = await http.post<UserSummary>(API.auth.grantRole(userId), {
+    new_role: newRole,
+  })
+  return data
+}
+
+export async function banUser(
+  userId: string,
+  reason: string
+): Promise<UserSummary> {
+  const { data } = await http.post<UserSummary>(API.auth.ban(userId), {
+    reason,
+  })
+  return data
+}
+
+export async function unbanUser(userId: string): Promise<UserSummary> {
+  const { data } = await http.post<UserSummary>(API.auth.unban(userId))
   return data
 }

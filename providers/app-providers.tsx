@@ -3,6 +3,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useState } from "react"
 
+import { InstallPrompt } from "@/components/pwa/install-prompt"
+import { ServiceWorkerRegistration } from "@/components/pwa/service-worker"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
@@ -41,6 +43,8 @@ export function AppProviders({ children }: Props) {
       <TooltipProvider delay={200}>
         {children}
         <Toaster position="bottom-center" richColors closeButton />
+        <ServiceWorkerRegistration />
+        <InstallPrompt />
       </TooltipProvider>
     </QueryClientProvider>
   )

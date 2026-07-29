@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   auth: "arcadia.auth",
   storeView: "arcadia.store-view",
   pwaPrompt: "arcadia.pwa-prompt",
+  mockDb: "arcadia.mock-db",
 } as const
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS]

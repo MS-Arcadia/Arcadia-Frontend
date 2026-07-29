@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation"
 import { Logo } from "@/components/brand/logo"
 import { Badge } from "@/components/ui/badge"
 import { useUnreadCountQuery } from "@/queries/notifications"
-import { NAV_ITEMS, isCurrent } from "@/lib/navigation"
+import { useAuthStore } from "@/stores/auth.store"
+import { NAV_ITEMS, isCurrent, navFor } from "@/lib/navigation"
 import { formatNumber } from "@/lib/money"
 import { cn } from "@/lib/utils"
 
@@ -20,6 +21,8 @@ import { cn } from "@/lib/utils"
 export function AppSidebar() {
   const pathname = usePathname()
   const { data: unread } = useUnreadCountQuery()
+  const role = useAuthStore((state) => state.user?.role)
+  const staff = navFor(role)
 
   return (
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-e border-sidebar-border bg-sidebar lg:flex">
@@ -72,6 +75,45 @@ export function AppSidebar() {
             </Link>
           )
         })}
+        {staff.length > 0 && (
+          <>
+            {/* A labelled group rather than more items in the same list: these are
+                a different kind of destination — work you do on the platform, not
+                places you browse. */}
+            <p className="px-3 pt-5 pb-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground/60 uppercase">
+              Manage
+            </p>
+            {staff.map((item) => {
+              const current = isCurrent(pathname, item.href)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={current ? "page" : undefined}
+                  className={cn(
+                    "group relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors",
+                    current
+                      ? "bg-sidebar-accent font-medium text-foreground"
+                      : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "absolute start-0 h-5 w-0.5 rounded-full bg-primary transition-opacity",
+                      current ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <item.icon
+                    className="size-[1.15rem] shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <span className="flex-1">{item.label}</span>
+                </Link>
+              )
+            })}
+          </>
+        )}
       </nav>
 
       <p className="px-6 py-5 text-[0.7rem] leading-relaxed text-muted-foreground/60">

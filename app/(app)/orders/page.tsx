@@ -114,7 +114,12 @@ export default function OrdersPage() {
                   </div>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {formatDateTime(order.created_at)}
+                    <Link
+                      href={`/orders/${order.id}`}
+                      className="transition-colors hover:text-foreground"
+                    >
+                      {formatDateTime(order.created_at)} · details
+                    </Link>
                   </p>
 
                   {order.gift && (

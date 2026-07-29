@@ -8,6 +8,7 @@ import { notificationKeys } from "@/api/notifications"
 import {
   getInstalmentPlan,
   getOrder,
+  payNextInstalment,
   getOrders,
   orderKeys,
   placeGift,
@@ -106,6 +107,21 @@ export function useInstalmentOrderMutation() {
       toast.success(`Payment plan started for ${order.game_title}`, {
         description: "The game is already in your library.",
       })
+    },
+  })
+}
+
+export function usePayNextInstalmentMutation() {
+  const invalidate = useSaleInvalidation()
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: payNextInstalment,
+    onSuccess: (plan) => {
+      invalidate()
+      void client.invalidateQueries({ queryKey: orderKeys.plan(plan.order_id) })
+      toast.success(
+        plan.state === "COMPLETED" ? "Payment plan paid off" : "Payment taken"
+      )
     },
   })
 }

@@ -48,9 +48,15 @@ not the other way round.
 ## Folder structure
 
 ```
-app/                  App Router. Route groups: (app) is the signed-in shell
-  (app)/layout.tsx    sidebar + top bar + mobile bar
-  (app)/_store-page.tsx   page implementation; page.tsx just re-exports it
+app/
+  (auth)/             signed-out: sign-in, sign-up. No shell, no wallet chip
+  (app)/              signed-in: AuthGuard + sidebar + top bar + mobile bar
+    page.tsx            store          /developer   developer's catalogue
+    library/            owned games    /review      Support's review queue
+    wallet/             balance+ledger /admin       accounts, roles, bans
+    orders/[id]/        one order + instalment schedule
+    games/[id]/         one game + the acquire panel
+  offline/            what the service worker serves with no network
 api/                  pure async functions — no hooks, no React
 queries/              TanStack Query hooks, one file per api/ file
 stores/               Zustand stores (*.store.ts)
@@ -102,6 +108,41 @@ Every type in `types/*.api.type.ts` was copied from the owning service's DTO. Th
 it sounds: the notification service shipped a bug because a test payload was written to match the
 code instead of the producer, and the field names silently differed. If you need a shape that is not
 in `types/`, read the service's DTO — do not infer it from a response you saw once.
+
+## Roles
+
+Four roles, and most of the interesting screens are gated by one:
+
+| Role | Can reach |
+| --- | --- |
+| `BASIC_USER` | store, library, wallet, orders, notifications |
+| `DEVELOPER` | + `/developer` — register, build, submit, price, publish, discounts |
+| `SUPPORT` | + `/review` — start a review, approve, reject, suggest a price |
+| `ADMIN` | + `/admin` — approve registrations, grant roles, suspend accounts |
+
+Gating is for **tidiness, not security**. Each page checks the role itself and every
+service checks the token, so a hand-typed URL gets an explanation rather than a
+blank screen. `useHasRole` exists for hiding links, never for protecting data.
+
+While the mock is on, the sign-in form offers one account per role — see
+`components/auth/demo-accounts.tsx`. That block disappears against a real auth
+service, because then there are no known passwords to offer.
+
+## The publishing workflow
+
+Requirement 1.3 is a nine-state machine, and it is modelled as one — in
+`services/mocks/db.ts` an illegal transition is a 409, not a no-op. That is what
+makes the developer and Support screens meaningful: `publish` on an unpriced game
+is refused, and `submit` on a game with no build is refused.
+
+```
+DRAFT → SUBMITTED → IN_REVIEW → APPROVED → PRICED → PUBLISHED
+                        ↓                              ↕
+                    REJECTED → APPEALED → IN_REVIEW  PREORDER
+```
+
+Render only the actions the current state allows. Showing every button and letting
+the server refuse is correct and horrible to use.
 
 ## Money
 
