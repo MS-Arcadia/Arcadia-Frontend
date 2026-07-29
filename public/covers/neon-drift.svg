@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#D85898"/>
+      <stop offset="1" stop-color="#9848A8"/>
+    </linearGradient>
+    <radialGradient id="v1" cx="0.5" cy="0.4" r="0.75">
+      <stop offset="0" stop-color="#D85898" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#0B0B0F" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="750" fill="#0B0B0F"/>
+  <rect width="1200" height="750" fill="url(#v1)"/>
+  <circle cx="200" cy="750" r="110" fill="none" stroke="url(#g1)" stroke-width="9" stroke-opacity="0.85"/>
+  <circle cx="200" cy="750" r="188" fill="none" stroke="url(#g1)" stroke-width="8" stroke-opacity="0.77"/>
+  <circle cx="200" cy="750" r="266" fill="none" stroke="url(#g1)" stroke-width="7" stroke-opacity="0.69"/>
+  <circle cx="200" cy="750" r="344" fill="none" stroke="url(#g1)" stroke-width="6" stroke-opacity="0.61"/>
+  <circle cx="200" cy="750" r="422" fill="none" stroke="url(#g1)" stroke-width="5" stroke-opacity="0.53"/>
+  <circle cx="200" cy="750" r="500" fill="none" stroke="url(#g1)" stroke-width="4" stroke-opacity="0.45"/>
+  <circle cx="200" cy="750" r="578" fill="none" stroke="url(#g1)" stroke-width="3" stroke-opacity="0.37"/>
+  <circle cx="200" cy="750" r="656" fill="none" stroke="url(#g1)" stroke-width="2" stroke-opacity="0.29"/>
+  <circle cx="200" cy="750" r="734" fill="none" stroke="url(#g1)" stroke-width="1" stroke-opacity="0.21"/>
+</svg>

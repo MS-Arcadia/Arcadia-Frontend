@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750" width="1200" height="750">
+  <defs>
+    <linearGradient id="g6" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9848A8"/>
+      <stop offset="1" stop-color="#5868C8"/>
+    </linearGradient>
+    <radialGradient id="v6" cx="0.5" cy="0.4" r="0.75">
+      <stop offset="0" stop-color="#9848A8" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#0B0B0F" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="750" fill="#0B0B0F"/>
+  <rect width="1200" height="750" fill="url(#v6)"/>
+  <g stroke="url(#g6)" stroke-width="6" fill="none" stroke-linecap="square">
+    <line x1="175" y1="165" x2="460" y2="165" stroke-opacity="0.8"/>
+    <line x1="460" y1="165" x2="460" y2="450" stroke-opacity="0.8"/>
+    <line x1="270" y1="355" x2="650" y2="355" stroke-opacity="0.8"/>
+    <line x1="650" y1="260" x2="650" y2="545" stroke-opacity="0.8"/>
+    <line x1="175" y1="545" x2="650" y2="545" stroke-opacity="0.8"/>
+    <line x1="840" y1="165" x2="840" y2="545" stroke-opacity="0.8"/>
+    <line x1="365" y1="640" x2="745" y2="640" stroke-opacity="0.8"/>
+    <line x1="1030" y1="355" x2="1030" y2="640" stroke-opacity="0.8"/>
+  </g>
+</svg>
