@@ -1,0 +1,68 @@
+name: Main
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: main-arcadia-frontend
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-frontend
+      - run: pnpm run check
+
+  publish:
+    name: Build & publish image
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/arcadia-frontend
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=,format=long
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ github.sha }}
+            NEXT_PUBLIC_API_MODE=${{ vars.NEXT_PUBLIC_API_MODE || 'mock' }}
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL || '/api' }}
+
+# There is no deploy step, and that is deliberate rather than unfinished: this
+# platform has no server to deploy to. The reference project this is modelled on
+# copies a compose file over SSH and restarts the stack; adding that here means
+# three secrets (SSH_HOST, SSH_USER, DEPLOY_SSH_KEY) and somewhere to send them.
+#
+# `NEXT_PUBLIC_*` come from repository *variables* rather than secrets on purpose —
+# they are inlined into the client bundle, so anybody who opens the page can read
+# them. Storing a public value as a secret only makes it harder to see what the
+# image was built with.

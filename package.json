@@ -8,8 +8,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "typecheck": "tsc --noEmit"
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check",
+    "audit:critical": "pnpm audit --audit-level=critical",
+    "audit:high": "pnpm audit --audit-level=high"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

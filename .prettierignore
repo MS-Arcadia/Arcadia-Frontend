@@ -5,3 +5,6 @@ node_modules/
 coverage/
 pnpm-lock.yaml
 .pnpm-store/
+# Generated: cover art produced by scripts/generate-covers.py from the logo palette.
+# Formatting it would be churn on a file nobody edits by hand.
+public/covers/

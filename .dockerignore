@@ -1,0 +1,33 @@
+# Build output — the image builds its own.
+.next/
+out/
+
+# Dependencies. The deps stage installs from the lockfile, and copying a host
+# node_modules in would ship whatever architecture the developer's machine is.
+node_modules/
+
+# Environment files. Never bake these into an image: `.env.local` holds a
+# developer's own settings and an image is a thing you push to a registry.
+.env
+.env.*
+
+# Version control
+.git/
+.gitignore
+
+# Editor and OS noise
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker's own files
+Dockerfile
+.dockerignore
+
+# Documentation. It changes often and would invalidate the build cache for no
+# reason — nothing in the image reads it.
+*.md

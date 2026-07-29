@@ -32,8 +32,12 @@ self.addEventListener("install", (event) => {
       .open(SHELL_CACHE)
       // `reload` so installing does not simply re-store whatever the HTTP cache
       // already had, which is how a service worker ships a stale shell on day one.
-      .then((cache) => cache.addAll(PRECACHE.map((url) => new Request(url, { cache: "reload" }))))
-      .then(() => self.skipWaiting()),
+      .then((cache) =>
+        cache.addAll(
+          PRECACHE.map((url) => new Request(url, { cache: "reload" }))
+        )
+      )
+      .then(() => self.skipWaiting())
   )
 })
 
@@ -42,9 +46,13 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => key !== SHELL_CACHE).map((key) => caches.delete(key))),
+        Promise.all(
+          keys
+            .filter((key) => key !== SHELL_CACHE)
+            .map((key) => caches.delete(key))
+        )
       )
-      .then(() => self.clients.claim()),
+      .then(() => self.clients.claim())
   )
 })
 
@@ -78,7 +86,7 @@ self.addEventListener("fetch", (event) => {
       fetch(request).catch(async () => {
         const cache = await caches.open(SHELL_CACHE)
         return (await cache.match(OFFLINE_URL)) ?? Response.error()
-      }),
+      })
     )
     return
   }
@@ -95,6 +103,6 @@ self.addEventListener("fetch", (event) => {
         .catch(() => cached ?? Response.error())
 
       return cached ?? network
-    }),
+    })
   )
 })

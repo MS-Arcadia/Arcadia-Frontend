@@ -1,0 +1,22 @@
+name: Setup frontend
+description: Install Node.js, pnpm and the frontend's dependencies
+
+# A composite action rather than the same six lines in five jobs. The version of
+# Node and the pnpm cache key live in one place, so a bump is one edit and the
+# jobs cannot disagree about which Node they are testing against.
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: pnpm
+        cache-dependency-path: pnpm-lock.yaml
+
+    - name: Install dependencies
+      shell: bash
+      # `--frozen-lockfile` so CI fails on a lockfile that does not match
+      # package.json rather than quietly resolving something new.
+      run: pnpm install --frozen-lockfile --prefer-offline

@@ -9,13 +9,13 @@ seven-service game distribution platform. Read this file in full before writing 
 
 ## App identity
 
-|             |                                                                          |
-| ----------- | ------------------------------------------------------------------------ |
-| App name    | **Arcadia** — use this in all UI copy                                    |
-| Language    | **English only.** LTR. No Persian in the UI, even though the spec is     |
-| Currency    | IRR, integer minor units, **string on the wire** — see `lib/money.ts`    |
-| Theme       | **Dark only.** `dark` is hard-coded on `<html>`; there is no theme toggle |
-| Platform    | **Desktop-first**, fully responsive, installable as a PWA                |
+|          |                                                                           |
+| -------- | ------------------------------------------------------------------------- |
+| App name | **Arcadia** — use this in all UI copy                                     |
+| Language | **English only.** LTR. No Persian in the UI, even though the spec is      |
+| Currency | IRR, integer minor units, **string on the wire** — see `lib/money.ts`     |
+| Theme    | **Dark only.** `dark` is hard-coded on `<html>`; there is no theme toggle |
+| Platform | **Desktop-first**, fully responsive, installable as a PWA                 |
 
 Desktop-first is a real constraint, not a preference: the sidebar rail is the primary navigation and
 the mobile bottom bar is its reduction. Design at `lg` and up first, then check it works on a phone —
@@ -23,21 +23,21 @@ not the other way round.
 
 ## Tech stack (do NOT swap or add alternatives)
 
-| Concern         | Library                                                            |
-| --------------- | ------------------------------------------------------------------ |
-| Framework       | Next.js 16 (App Router, Turbopack, React Compiler on)              |
-| Language        | TypeScript 5, strict, `target: ES2020` (BigInt literals are used)  |
-| React           | React 19                                                           |
-| Styling         | Tailwind CSS v4 + CSS variables                                    |
+| Concern         | Library                                                              |
+| --------------- | -------------------------------------------------------------------- |
+| Framework       | Next.js 16 (App Router, Turbopack, React Compiler on)                |
+| Language        | TypeScript 5, strict, `target: ES2020` (BigInt literals are used)    |
+| React           | React 19                                                             |
+| Styling         | Tailwind CSS v4 + CSS variables                                      |
 | UI primitives   | shadcn/ui `base-nova` style → `components/ui/`, built on **Base UI** |
-| Data fetching   | TanStack Query v5                                                  |
-| Global state    | Zustand v5                                                         |
-| Forms           | React Hook Form + `@hookform/resolvers` + Zod                      |
-| HTTP client     | Axios (`services/http.ts`) — never use `fetch` directly            |
-| Icons           | `lucide-react` only                                                |
-| Animations      | `motion` (Framer Motion v12)                                       |
-| Toasts          | `sonner`                                                           |
-| Package manager | `pnpm`                                                             |
+| Data fetching   | TanStack Query v5                                                    |
+| Global state    | Zustand v5                                                           |
+| Forms           | React Hook Form + `@hookform/resolvers` + Zod                        |
+| HTTP client     | Axios (`services/http.ts`) — never use `fetch` directly              |
+| Icons           | `lucide-react` only                                                  |
+| Animations      | `motion` (Framer Motion v12)                                         |
+| Toasts          | `sonner`                                                             |
+| Package manager | `pnpm`                                                               |
 
 **This shadcn style is Base UI, not Radix.** Two consequences that will bite:
 
@@ -113,12 +113,12 @@ in `types/`, read the service's DTO — do not infer it from a response you saw 
 
 Four roles, and most of the interesting screens are gated by one:
 
-| Role | Can reach |
-| --- | --- |
-| `BASIC_USER` | store, library, wallet, orders, notifications |
-| `DEVELOPER` | + `/developer` — register, build, submit, price, publish, discounts |
-| `SUPPORT` | + `/review` — start a review, approve, reject, suggest a price |
-| `ADMIN` | + `/admin` — approve registrations, grant roles, suspend accounts |
+| Role         | Can reach                                                           |
+| ------------ | ------------------------------------------------------------------- |
+| `BASIC_USER` | store, library, wallet, orders, notifications                       |
+| `DEVELOPER`  | + `/developer` — register, build, submit, price, publish, discounts |
+| `SUPPORT`    | + `/review` — start a review, approve, reject, suggest a price      |
+| `ADMIN`      | + `/admin` — approve registrations, grant roles, suspend accounts   |
 
 Gating is for **tidiness, not security**. Each page checks the role itself and every
 service checks the token, so a hand-typed URL gets an explanation rather than a
@@ -194,17 +194,17 @@ apologise.
 
 ## Do's and don'ts
 
-| Do                                                        | Don't                                          |
-| --------------------------------------------------------- | ---------------------------------------------- |
-| `http` from `@/services/http`                              | raw `fetch`, or a second axios instance        |
-| `ls` from `@/lib/local-storage`                            | `localStorage` directly                        |
-| keys in `lib/storage-keys.ts`                              | hard-coded storage key strings                 |
-| query keys from `api/*.ts`                                 | inline `queryKey` arrays                       |
-| `formatMoney()`                                            | any arithmetic on `amount_minor` as a number   |
-| `lucide-react`                                             | any other icon set                             |
-| `render={<Link/>}` + `nativeButton={false}`                | `asChild` (this is Base UI)                    |
-| check `components/ui/` first                               | re-implementing a primitive                    |
-| `pnpm add`                                                 | `npm` or `yarn`                                |
+| Do                                          | Don't                                        |
+| ------------------------------------------- | -------------------------------------------- |
+| `http` from `@/services/http`               | raw `fetch`, or a second axios instance      |
+| `ls` from `@/lib/local-storage`             | `localStorage` directly                      |
+| keys in `lib/storage-keys.ts`               | hard-coded storage key strings               |
+| query keys from `api/*.ts`                  | inline `queryKey` arrays                     |
+| `formatMoney()`                             | any arithmetic on `amount_minor` as a number |
+| `lucide-react`                              | any other icon set                           |
+| `render={<Link/>}` + `nativeButton={false}` | `asChild` (this is Base UI)                  |
+| check `components/ui/` first                | re-implementing a primitive                  |
+| `pnpm add`                                  | `npm` or `yarn`                              |
 
 ## Before writing code
 
