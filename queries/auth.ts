@@ -57,7 +57,7 @@ export function useLoginMutation() {
       signIn(tokens)
       // Every cache from a previous session is somebody else's data.
       client.clear()
-      router.replace("/")
+      router.replace("/store")
     },
   })
 }

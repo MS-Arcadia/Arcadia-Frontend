@@ -77,25 +77,52 @@ export function StorePage() {
               variant={onlyDiscounted ? "default" : "outline"}
               size="sm"
               onClick={toggleDiscounted}
+              aria-pressed={onlyDiscounted}
               className="min-h-9"
             >
               <SlidersHorizontal className="size-3.5" />
               On sale
             </Button>
 
-            {(["newest", "price-asc", "discount"] as const).map((option) => (
-              <Button
-                key={option}
-                variant={sort === option ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setSort(option)}
-                className="min-h-9"
-              >
-                {option === "newest" && "Newest"}
-                {option === "price-asc" && "Cheapest"}
-                {option === "discount" && "Biggest discount"}
-              </Button>
-            ))}
+            {/* A segmented control, not three loose buttons.
+                Sorting is one choice among three, and rendering it as separate
+                buttons next to the "On sale" toggle made a filter and a sort look
+                like the same kind of control — four things you might switch on,
+                rather than one switch and one three-way choice. The shared border
+                and `role="radiogroup"` say "pick one" to both the eye and a screen
+                reader. */}
+            <div
+              role="radiogroup"
+              aria-label="Sort games"
+              className="flex items-center rounded-lg border border-border p-0.5"
+            >
+              {(
+                [
+                  ["newest", "Newest"],
+                  ["price-asc", "Cheapest"],
+                  ["discount", "Biggest discount"],
+                ] as const
+              ).map(([option, label]) => {
+                const active = sort === option
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setSort(option)}
+                    className={cn(
+                      "min-h-8 rounded-md px-2.5 text-xs transition-colors focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none",
+                      active
+                        ? "bg-secondary font-medium text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
 

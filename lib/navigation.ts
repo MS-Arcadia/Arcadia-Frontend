@@ -24,7 +24,7 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Store", icon: Store, primary: true },
+  { href: "/store", label: "Store", icon: Store, primary: true },
   { href: "/library", label: "Library", icon: LibraryBig, primary: true },
   { href: "/wallet", label: "Wallet", icon: Wallet, primary: true },
   { href: "/notifications", label: "Notifications", icon: Bell, primary: true },
@@ -62,9 +62,10 @@ export function navFor(role: Role | undefined): NavItem[] {
 /**
  * Whether a nav item should read as current.
  *
- * The store lives at "/" so it cannot use a prefix test — every route would match
- * it. Everything else does, so `/orders/abc123` still highlights "Orders".
+ * A prefix test throughout, so `/orders/abc123` still highlights "Orders". This was
+ * a special case while the store lived at "/" — every route matched it — and stopped
+ * needing one when the landing page took that path.
  */
 export function isCurrent(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href)
+  return pathname === href || pathname.startsWith(`${href}/`)
 }

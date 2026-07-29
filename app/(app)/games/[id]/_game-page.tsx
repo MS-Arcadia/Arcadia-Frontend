@@ -49,7 +49,7 @@ export function GamePage({ id }: Props) {
           variant="outline"
           className="mt-5 min-h-11"
           nativeButton={false}
-          render={<Link href="/" />}
+          render={<Link href="/store" />}
         >
           Back to the store
         </Button>
@@ -70,7 +70,7 @@ export function GamePage({ id }: Props) {
         size="sm"
         className="-ms-2 gap-1.5"
         nativeButton={false}
-        render={<Link href="/" />}
+        render={<Link href="/store" />}
       >
         <ArrowLeft className="size-4 rtl:rotate-180" />
         Store

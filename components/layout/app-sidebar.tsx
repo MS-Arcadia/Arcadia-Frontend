@@ -27,7 +27,7 @@ export function AppSidebar() {
   return (
     <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-e border-sidebar-border bg-sidebar lg:flex">
       <div className="px-6 py-7">
-        <Link href="/" aria-label="Arcadia home" className="block">
+        <Link href="/store" aria-label="Arcadia store" className="block">
           <Logo priority className="max-w-[9.5rem]" />
         </Link>
       </div>

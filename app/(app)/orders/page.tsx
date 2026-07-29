@@ -78,7 +78,7 @@ export default function OrdersPage() {
           <Button
             className="mt-5 min-h-11"
             nativeButton={false}
-            render={<Link href="/" />}
+            render={<Link href="/store" />}
           >
             Browse the store
           </Button>

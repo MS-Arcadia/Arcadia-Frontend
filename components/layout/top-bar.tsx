@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
 import { Bell, Search, Wallet } from "lucide-react"
 
 import { AccountMenu } from "@/components/layout/account-menu"
@@ -25,6 +26,8 @@ import { useStoreFilters } from "@/stores/store-filters.store"
  * "can I add more".
  */
 export function TopBar() {
+  const router = useRouter()
+  const pathname = usePathname()
   const { search, setSearch } = useStoreFilters()
   const { data: wallet } = useWalletQuery()
   const { data: unread } = useUnreadCountQuery()
@@ -33,7 +36,7 @@ export function TopBar() {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="flex h-16 items-center gap-3 px-4 lg:px-8">
-        <Link href="/" aria-label="Arcadia home" className="lg:hidden">
+        <Link href="/store" aria-label="Arcadia store" className="lg:hidden">
           <Logo priority className="max-w-[6.5rem]" />
         </Link>
 
@@ -45,7 +48,14 @@ export function TopBar() {
           <Input
             type="search"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value)
+              // The search box is global chrome but only the store renders results,
+              // so typing anywhere else used to do nothing visible. Going there on
+              // the first keystroke is the only reading of "search" that is true.
+              if (event.target.value && pathname !== "/store")
+                router.push("/store")
+            }}
             placeholder="Search games"
             aria-label="Search games"
             className="ps-9"

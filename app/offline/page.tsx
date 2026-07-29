@@ -35,7 +35,7 @@ export default function OfflinePage() {
       <Button
         className="mt-6 min-h-11"
         nativeButton={false}
-        render={<Link href="/" />}
+        render={<Link href="/store" />}
       >
         Try again
       </Button>

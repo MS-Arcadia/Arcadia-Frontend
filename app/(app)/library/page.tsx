@@ -7,6 +7,11 @@ import { Download, Gift, LibraryBig } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useLibraryQuery } from "@/queries/catalog"
 import { formatDate } from "@/lib/datetime"
 import { formatNumber } from "@/lib/money"
@@ -51,7 +56,7 @@ export default function LibraryPage() {
           <Button
             className="mt-5 min-h-11"
             nativeButton={false}
-            render={<Link href="/" />}
+            render={<Link href="/store" />}
           >
             Browse the store
           </Button>
@@ -97,10 +102,28 @@ export default function LibraryPage() {
                 </p>
 
                 <div className="mt-auto flex items-center gap-2 pt-2">
-                  <Button size="sm" className="min-h-9 flex-1 gap-1.5">
-                    <Download className="size-3.5" />
-                    Install
-                  </Button>
+                  {/* Disabled with a reason rather than wired to nothing. The
+                      download comes from the media service, which signs its own
+                      URLs and is not part of the mock — a button that looked live
+                      and did nothing would be the worst of the three options. */}
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          size="sm"
+                          disabled
+                          className="min-h-9 flex-1 gap-1.5"
+                        >
+                          <Download className="size-3.5" />
+                          Install
+                        </Button>
+                      }
+                    />
+                    <TooltipContent>
+                      Downloads come from the media service, which is not
+                      connected yet
+                    </TooltipContent>
+                  </Tooltip>
                   <Button
                     size="sm"
                     variant="ghost"
