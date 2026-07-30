@@ -3,7 +3,10 @@ import {
   ClipboardCheck,
   Gamepad2,
   LibraryBig,
+  MessagesSquare,
+  PartyPopper,
   Receipt,
+  ShoppingBag,
   Store,
   UserRound,
   Wallet,
@@ -28,7 +31,10 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/library", label: "Library", icon: LibraryBig, primary: true },
   { href: "/wallet", label: "Wallet", icon: Wallet, primary: true },
   { href: "/notifications", label: "Notifications", icon: Bell, primary: true },
+  { href: "/market", label: "Market", icon: ShoppingBag },
+  { href: "/community", label: "Community", icon: MessagesSquare },
   { href: "/orders", label: "Orders", icon: Receipt },
+  { href: "/festivals", label: "Festivals", icon: PartyPopper },
 ]
 
 /**
@@ -49,6 +55,12 @@ export const STAFF_NAV: NavItem[] = [
     href: "/review",
     label: "Review queue",
     icon: ClipboardCheck,
+    roles: ["SUPPORT", "ADMIN"],
+  },
+  {
+    href: "/community/moderation",
+    label: "Community reports",
+    icon: MessagesSquare,
     roles: ["SUPPORT", "ADMIN"],
   },
   { href: "/admin", label: "Accounts", icon: UserRound, roles: ["ADMIN"] },

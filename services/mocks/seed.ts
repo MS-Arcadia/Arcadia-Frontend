@@ -265,3 +265,127 @@ export const SEED_ROLE_REQUESTS: RoleRequestSeed[] = [
 ]
 
 export const OPENING_BALANCE = 3_500_000
+
+// --- marketplace (requirement 1.6) ------------------------------------------
+
+export interface MarketItemSeed {
+  /** Resolved against `SEED_GAMES[].title` once the games are built, so this
+   *  file does not need to know the generated game ids. */
+  gameTitle: string
+  title: string
+  description: string
+  imageUrl: string
+  buyValue: number
+  sellValue: number
+}
+
+export const SEED_MARKET_ITEMS: MarketItemSeed[] = [
+  {
+    gameTitle: "Neon Drift",
+    title: "Chrome Spoiler",
+    description:
+      "A rear wing that does nothing for handling and everything for how the replay looks.",
+    imageUrl: "/covers/neon-drift.svg",
+    buyValue: 12_000,
+    sellValue: 9_500,
+  },
+  {
+    gameTitle: "Vault of Echoes",
+    title: "Echo Key",
+    description:
+      "Opens one door the dungeon does not remember locking. Consumed on use.",
+    imageUrl: "/covers/vault-of-echoes.svg",
+    buyValue: 8_000,
+    sellValue: 6_200,
+  },
+  {
+    gameTitle: "Iron Bloom",
+    title: "Rust Seed",
+    description: "Plant it and one machine in the garden grows a second arm.",
+    imageUrl: "/covers/iron-bloom.svg",
+    buyValue: 25_000,
+    sellValue: 21_000,
+  },
+]
+
+// --- community (requirement 1.8) --------------------------------------------
+
+export interface PostSeed {
+  gameTitle: string
+  authorId: string
+  body: string
+  tags: string[]
+  spoiler?: boolean
+  /** emoji → how many seeded reactions, spread across the seed accounts. */
+  reactions?: Record<string, number>
+  comments?: { authorId: string; body: string }[]
+}
+
+export const SEED_POSTS: PostSeed[] = [
+  {
+    gameTitle: "Neon Drift",
+    authorId: DEVELOPER_ID,
+    body: "Patch notes for 1.1: the hairpin on Sector 4 no longer eats your brakes. Also fixed the ghost car occasionally driving better than you.",
+    tags: ["patch-notes"],
+    reactions: { "🔥": 4, "👍": 2 },
+    comments: [
+      {
+        authorId: PLAYER_ID,
+        body: "Finally. That hairpin cost me the tournament.",
+      },
+    ],
+  },
+  {
+    gameTitle: "Neon Drift",
+    authorId: PLAYER_ID,
+    body: "PB on the coastal loop tonight — 1:04.2. Anyone beating that without the chrome spoiler is lying.",
+    tags: ["speedrun"],
+    reactions: { "👍": 3, "😮": 1 },
+  },
+  {
+    gameTitle: "Vault of Echoes",
+    authorId: PLAYER_ID,
+    body: "Spoiler: the room the dungeon adds after your third death is not random. It is always the one you skipped.",
+    tags: ["theory"],
+    spoiler: true,
+    reactions: { "🤔": 5, "🎮": 2 },
+    comments: [
+      { authorId: SUPPORT_ID, body: "Please tag this — done, thank you." },
+    ],
+  },
+]
+
+// --- festivals (requirement 1.9) --------------------------------------------
+
+export interface FestivalSeed {
+  name: string
+  description: string
+  state: "DRAFT" | "ACTIVE"
+  startInDays: number
+  endInDays: number
+  gameTitles: string[]
+  /** Only meaningful for the ACTIVE seed — a live, already-approved discount
+   *  on the first game in `gameTitles`, so the storefront has something to show. */
+  discountBpsOnFirstGame?: number
+}
+
+export const SEED_FESTIVALS: FestivalSeed[] = [
+  {
+    name: "Midwinter Sale",
+    description:
+      "A week of platform-wide discounts to close out the season.",
+    state: "ACTIVE",
+    startInDays: -2,
+    endInDays: 5,
+    gameTitles: ["Neon Drift", "Iron Bloom"],
+    discountBpsOnFirstGame: 3000,
+  },
+  {
+    name: "Indie Spotlight",
+    description: "A showcase for the smaller teams on the platform.",
+    state: "DRAFT",
+    startInDays: 14,
+    endInDays: 21,
+    gameTitles: ["Paper Kingdoms"],
+  },
+]

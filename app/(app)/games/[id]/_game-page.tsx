@@ -3,12 +3,14 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { ArrowLeft, CalendarClock, Monitor } from "lucide-react"
+import { ArrowLeft, CalendarClock, MessagesSquare, Monitor } from "lucide-react"
 
 import { AcquirePanel } from "@/components/game/acquire-panel"
 import { PriceTag } from "@/components/game/price-tag"
+import { GameReviews } from "@/components/review/game-reviews"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useGameQuery, useLibraryQuery } from "@/queries/catalog"
 import { formatDate } from "@/lib/datetime"
@@ -127,6 +129,17 @@ export function GamePage({ id }: Props) {
             {game.description}
           </p>
 
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-9 gap-1.5"
+            nativeButton={false}
+            render={<Link href={`/community?game=${game.id}`} />}
+          >
+            <MessagesSquare className="size-3.5" />
+            Community
+          </Button>
+
           <section className="space-y-2">
             <h2 className="flex items-center gap-2 text-sm font-semibold">
               <Monitor className="size-4" strokeWidth={1.75} />
@@ -162,6 +175,10 @@ export function GamePage({ id }: Props) {
           />
         </div>
       </div>
+
+      <Separator />
+
+      <GameReviews gameId={game.id} />
     </div>
   )
 }

@@ -42,8 +42,39 @@ import type {
   NotificationKind,
 } from "@/types/notification.api.type"
 import type { UserSummary } from "@/types/auth.api.type"
+import type {
+  BookDepth,
+  BookView,
+  Holding,
+  MarketItem,
+  MarketOrder,
+  OrderSide,
+  Trade,
+} from "@/types/marketplace.api.type"
+import {
+  MAX_REVIEW_WORDS,
+  type Review,
+  type ReviewSentiment,
+  type ReviewSortBy,
+  type SortOrder,
+} from "@/types/review.api.type"
+import type {
+  FestivalDetailView,
+  FestivalGameView,
+  FestivalView,
+  PromotionSnapshotView,
+} from "@/types/festival.api.type"
+import {
+  REACTION_EMOJI,
+  type Comment,
+  type FeedSort,
+  type Post,
+  type Report,
+  type ResolutionAction,
+} from "@/types/community.api.type"
 
 import {
+  ADMIN_ID,
   CURRENCY,
   DEVELOPER_ID,
   GIFT_MESSAGE_FEE_BPS,
@@ -51,7 +82,10 @@ import {
   PLATFORM_SHARE_BPS,
   PLAYER_ID,
   REFUND_WINDOW_HOURS,
+  SEED_FESTIVALS,
   SEED_GAMES,
+  SEED_MARKET_ITEMS,
+  SEED_POSTS,
   SEED_ROLE_REQUESTS,
   SEED_USERS,
   SUPPORT_ID,
@@ -132,6 +166,31 @@ interface Store {
   roleRequests: RoleRequest[]
   reviews: Record<string, GameReview[]>
   promotions: Record<string, Promotion[]>
+
+  // --- marketplace (requirement 1.6) ---------------------------------------
+  marketItems: MarketItem[]
+  marketOrders: MarketOrder[]
+  marketTrades: Trade[]
+  marketHoldings: Holding[]
+
+  // --- reviews (requirement 1.7) -------------------------------------------
+  userReviews: Record<string, Review[]>
+  /** `(review_id, user_id) -> reaction`, the idempotency the real service's
+   *  `ReactionModel` table provides — a repeat reaction swaps rather than stacks. */
+  reviewReactions: Record<string, Record<string, ReviewSentiment>>
+  /** How many times a review has been reported, hidden from every response —
+   *  the real service tracks this to refuse an 11th report, not to publish a count. */
+  reviewReportCounts: Record<string, number>
+
+  // --- festivals (requirement 1.9) -----------------------------------------
+  festivals: FestivalDetailView[]
+
+  // --- community (requirement 1.8) -----------------------------------------
+  posts: Post[]
+  comments: Record<string, Comment[]>
+  /** `(post_id, user_id) -> emoji` — the idempotency `PUT .../reactions` needs. */
+  postReactions: Record<string, Record<string, string>>
+  communityReports: Report[]
 }
 
 // --- seeding ---------------------------------------------------------------
@@ -236,6 +295,153 @@ function toUser(seed: SeedUser): MockUser {
   }
 }
 
+function gameIdByTitle(games: Game[], title: string): string {
+  const game = games.find((candidate) => candidate.title === title)
+  if (!game) throw new Error(`seed: no game titled "${title}"`)
+  return game.id
+}
+
+function buildMarketItems(games: Game[]): MarketItem[] {
+  return SEED_MARKET_ITEMS.map((seed) => ({
+    id: id("item"),
+    game_id: gameIdByTitle(games, seed.gameTitle),
+    developer_id: DEVELOPER_ID,
+    title: seed.title,
+    description: seed.description,
+    image_url: seed.imageUrl,
+    buy_value: minor(seed.buyValue),
+    sell_value: minor(seed.sellValue),
+    created_at: iso(-60 * 24 * 10),
+  }))
+}
+
+/** One holding of the first market item, so the player's holdings and the
+ *  library-adjacent parts of the market page are not empty on first run. */
+function buildMarketHoldings(items: MarketItem[]): Holding[] {
+  if (items.length === 0) return []
+  return [{ user_id: PLAYER_ID, item_id: items[0].id, quantity: 1 }]
+}
+
+/**
+ * Festivals plus, for the ACTIVE seed's first game, an already-ACTIVE promotion
+ * carrying that festival's id — exactly what `startFestival`/`proposePromotion`
+ * produce together in normal use, so the seed does not need a second code path.
+ * `discounted_price`/`discount_bps` on the returned game views are always `null`
+ * here: `festivalGameView()` computes them live from `promotions[gameId]`, the
+ * same read-model join the real service does from `game-events`.
+ */
+function buildFestivals(games: Game[]): {
+  festivals: FestivalDetailView[]
+  promotions: Record<string, Promotion[]>
+} {
+  const promotions: Record<string, Promotion[]> = {}
+  const festivals = SEED_FESTIVALS.map((seed) => {
+    const festivalId = id("fest")
+    const active = seed.state === "ACTIVE"
+    const gameViews: FestivalGameView[] = seed.gameTitles.map((title) => {
+      const game = games.find((candidate) => candidate.title === title)
+      if (!game) throw new Error(`seed: no game titled "${title}"`)
+      return {
+        game_id: game.id,
+        title: game.title,
+        developer_id: game.developer_id,
+        added_by: ADMIN_ID,
+        added_at: iso(-60 * 24 * 3),
+        discounted_price: null,
+        discount_bps: null,
+      }
+    })
+
+    if (active && seed.discountBpsOnFirstGame && gameViews.length > 0) {
+      const gameId = gameViews[0].game_id
+      const price = games.find((g) => g.id === gameId)?.final_price
+      promotions[gameId] = [
+        {
+          id: id("promo"),
+          game_id: gameId,
+          discount_bps: seed.discountBpsOnFirstGame,
+          percent_off: seed.discountBpsOnFirstGame / 100,
+          state: "ACTIVE",
+          starts_at: iso(seed.startInDays * 24 * 60),
+          ends_at: iso(seed.endInDays * 24 * 60),
+          live: true,
+          proposed_by: SUPPORT_ID,
+          festival_id: festivalId,
+          note: `Seeded for ${seed.name}`,
+          decided_by: gameViews[0].developer_id,
+          decision_note: "",
+          created_at: iso(-60 * 24 * 4),
+        },
+      ]
+      if (price) {
+        const discounted = money(
+          parse(price) - share(parse(price), seed.discountBpsOnFirstGame)
+        )
+        const game = games.find((g) => g.id === gameId)
+        if (game) {
+          game.discount_bps = seed.discountBpsOnFirstGame
+          game.effective_price = discounted
+        }
+      }
+    }
+
+    return {
+      id: festivalId,
+      name: seed.name,
+      description: seed.description,
+      state: seed.state,
+      starts_at: iso(seed.startInDays * 24 * 60),
+      ends_at: iso(seed.endInDays * 24 * 60),
+      game_count: gameViews.length,
+      created_by: ADMIN_ID,
+      created_at: iso(-60 * 24 * 5),
+      started_at: active ? iso(seed.startInDays * 24 * 60) : null,
+      ended_at: null,
+      games: gameViews,
+      promotions: [],
+    }
+  })
+  return { festivals, promotions }
+}
+
+function buildPosts(games: Game[]): {
+  posts: Post[]
+  comments: Record<string, Comment[]>
+} {
+  const posts: Post[] = []
+  const comments: Record<string, Comment[]> = {}
+  for (const seed of SEED_POSTS) {
+    const postId = id("post")
+    const reactions = seed.reactions ?? {}
+    posts.push({
+      id: postId,
+      game_id: gameIdByTitle(games, seed.gameTitle),
+      author_id: seed.authorId,
+      body: seed.body,
+      spoiler: seed.spoiler ?? false,
+      tags: seed.tags,
+      attachments: [],
+      reactions,
+      comment_count: seed.comments?.length ?? 0,
+      view_count: Math.floor(Math.random() * 200) + 20,
+      feedback_score: Object.values(reactions).reduce((a, b) => a + b, 0),
+      status: "ACTIVE",
+      created_at: iso(-60 * (Math.floor(Math.random() * 500) + 30)),
+      edited_at: null,
+    })
+    comments[postId] = (seed.comments ?? []).map((comment) => ({
+      id: id("cmt"),
+      post_id: postId,
+      author_id: comment.authorId,
+      body: comment.body,
+      status: "ACTIVE",
+      created_at: iso(-60 * 20),
+      edited_at: null,
+    }))
+  }
+  return { posts, comments }
+}
+
 function initialStore(): Store {
   sequence = 1
   const games = SEED_GAMES.map(buildGame)
@@ -272,6 +478,10 @@ function initialStore(): Store {
     ]
   }
 
+  const marketItems = buildMarketItems(games)
+  const { festivals, promotions: festivalPromotions } = buildFestivals(games)
+  const { posts, comments } = buildPosts(games)
+
   return {
     users,
     sessionUserId: null,
@@ -293,7 +503,23 @@ function initialStore(): Store {
       created_at: iso(-seed.created_at_minutes_ago),
     })),
     reviews,
-    promotions: {},
+    promotions: festivalPromotions,
+
+    marketItems,
+    marketOrders: [],
+    marketTrades: [],
+    marketHoldings: buildMarketHoldings(marketItems),
+
+    userReviews: {},
+    reviewReactions: {},
+    reviewReportCounts: {},
+
+    festivals,
+
+    posts,
+    comments,
+    postReactions: {},
+    communityReports: [],
   }
 }
 
@@ -304,7 +530,10 @@ function initialStore(): Store {
 // purchase is gone. The version means changing the seed starts fresh rather than
 // leaving a half-migrated shape in somebody's browser.
 
-const SNAPSHOT_VERSION = 1
+// Bumped for marketplace/reviews/festivals/community: an old snapshot has none
+// of those keys, and the alternative to a version bump is every new function
+// below defending against a store that predates it.
+const SNAPSHOT_VERSION = 2
 
 interface Snapshot {
   version: number
@@ -1266,7 +1495,8 @@ export function proposePromotion(
   discountBps: number,
   startsAt: string,
   endsAt: string,
-  note: string
+  note: string,
+  festivalId = ""
 ): Promotion {
   const user = requireRole("SUPPORT", "ADMIN")
   const game = gameById(gameId)
@@ -1276,6 +1506,9 @@ export function proposePromotion(
       "VALIDATION_FAILED",
       "A discount is between 1 and 10000 bps"
     )
+  }
+  if (festivalId && !db.festivals.some((festival) => festival.id === festivalId)) {
+    throw new MockRuleError(404, "NOT_FOUND", "No such festival")
   }
   const promotion: Promotion = {
     id: id("promo"),
@@ -1287,7 +1520,7 @@ export function proposePromotion(
     ends_at: endsAt,
     live: false,
     proposed_by: user.user_id,
-    festival_id: "",
+    festival_id: festivalId,
     note,
     decided_by: "",
     decision_note: "",
@@ -1475,4 +1708,1280 @@ export function decideRoleRequest(
   if (approve) grantRole(request.user_id, request.requested_role)
   save()
   return request
+}
+
+// --- marketplace (requirement 1.6) ------------------------------------------
+
+function holdingOf(userId: string, itemId: string): Holding | undefined {
+  return db.marketHoldings.find(
+    (holding) => holding.user_id === userId && holding.item_id === itemId
+  )
+}
+
+function adjustHolding(userId: string, itemId: string, delta: number): void {
+  const existing = holdingOf(userId, itemId)
+  if (existing) existing.quantity += delta
+  else db.marketHoldings.push({ user_id: userId, item_id: itemId, quantity: delta })
+}
+
+export function marketItemsOf(filters: { game_id?: string }): MarketItem[] {
+  return db.marketItems.filter(
+    (item) => !filters.game_id || item.game_id === filters.game_id
+  )
+}
+
+export function marketItemById(itemId: string): MarketItem {
+  const item = db.marketItems.find((candidate) => candidate.id === itemId)
+  if (!item) throw new MockRuleError(404, "NOT_FOUND", "No such item")
+  return item
+}
+
+export function createMarketItem(input: {
+  game_id: string
+  title: string
+  description: string
+  image_url: string
+  buy_value: string
+  sell_value: string
+}): MarketItem {
+  const user = requireRole("DEVELOPER", "ADMIN")
+  const title = input.title.trim()
+  if (!title)
+    throw new MockRuleError(400, "TITLE_REQUIRED", "A title is required")
+  if (title.length > 120)
+    throw new MockRuleError(400, "TITLE_TOO_LONG", "At most 120 characters")
+  let buyValue: bigint
+  let sellValue: bigint
+  try {
+    buyValue = BigInt(input.buy_value || "0")
+    sellValue = BigInt(input.sell_value || "0")
+  } catch {
+    throw new MockRuleError(400, "INVALID_AMOUNT", "Values must be whole numbers")
+  }
+  if (buyValue < 0n || sellValue < 0n) {
+    throw new MockRuleError(400, "INVALID_VALUE", "A value cannot be negative")
+  }
+  const item: MarketItem = {
+    id: id("item"),
+    game_id: input.game_id,
+    developer_id: user.user_id,
+    title,
+    description: input.description.trim(),
+    image_url: input.image_url.trim(),
+    buy_value: money(buyValue),
+    sell_value: money(sellValue),
+    created_at: iso(),
+  }
+  db.marketItems.unshift(item)
+  save()
+  return item
+}
+
+export function distributeMarketItem(
+  itemId: string,
+  count: number
+): { granted: number } {
+  requireRole("SUPPORT", "ADMIN")
+  const item = marketItemById(itemId)
+  if (!Number.isInteger(count) || count < 1 || count > 500) {
+    throw new MockRuleError(400, "INVALID_COUNT", "Between 1 and 500")
+  }
+  const recipients = db.users.filter((candidate) => candidate.state === "ACTIVE")
+  if (recipients.length === 0) {
+    throw new MockRuleError(
+      422,
+      "NO_RECIPIENTS",
+      "No known users to distribute to yet"
+    )
+  }
+  const granted = Math.min(count, recipients.length)
+  const shuffled = [...recipients].sort(() => Math.random() - 0.5)
+  for (const recipient of shuffled.slice(0, granted)) {
+    adjustHolding(recipient.user_id, item.id, 1)
+  }
+  save()
+  return { granted }
+}
+
+export function placeMarketOrder(input: {
+  item_id: string
+  side: OrderSide
+  price: string
+}): MarketOrder {
+  const user = currentUser()
+  const item = marketItemById(input.item_id)
+  if (input.side !== "BUY" && input.side !== "SELL") {
+    throw new MockRuleError(400, "INVALID_SIDE", "side must be BUY or SELL")
+  }
+  let price: bigint
+  try {
+    price = BigInt(input.price || "0")
+  } catch {
+    throw new MockRuleError(400, "INVALID_AMOUNT", "Price must be a whole number")
+  }
+  if (price <= 0n) {
+    throw new MockRuleError(400, "INVALID_PRICE", "A price must be positive")
+  }
+  if (input.side === "SELL") {
+    const held = holdingOf(user.user_id, item.id)
+    if (!held || held.quantity <= 0) {
+      throw new MockRuleError(422, "ITEM_NOT_HELD", "You do not hold this item")
+    }
+  }
+  const order: MarketOrder = {
+    id: id("mord"),
+    item_id: item.id,
+    user_id: user.user_id,
+    side: input.side,
+    price: money(price),
+    status: "OPEN",
+    created_at: iso(),
+  }
+  db.marketOrders.unshift(order)
+  save()
+  return order
+}
+
+export function cancelMarketOrder(orderId: string): MarketOrder {
+  const user = currentUser()
+  const order = db.marketOrders.find((candidate) => candidate.id === orderId)
+  if (!order) throw new MockRuleError(404, "NOT_FOUND", "No such order")
+  if (order.user_id !== user.user_id) {
+    throw new MockRuleError(
+      403,
+      "NOT_ORDER_OWNER",
+      "That order belongs to someone else"
+    )
+  }
+  if (order.status === "FILLED") {
+    throw new MockRuleError(
+      409,
+      "ORDER_ALREADY_FILLED",
+      "This order already matched"
+    )
+  }
+  if (order.status === "CANCELLED") {
+    throw new MockRuleError(
+      409,
+      "ORDER_ALREADY_CANCELLED",
+      "This order is already cancelled"
+    )
+  }
+  order.status = "CANCELLED"
+  save()
+  return order
+}
+
+export function myMarketOrders(): MarketOrder[] {
+  const user = currentUser()
+  return db.marketOrders.filter((order) => order.user_id === user.user_id)
+}
+
+export function myMarketTrades(): Trade[] {
+  const user = currentUser()
+  return db.marketTrades.filter(
+    (trade) =>
+      trade.buyer_id === user.user_id || trade.seller_id === user.user_id
+  )
+}
+
+export function holdingsOf(userId: string): Holding[] {
+  const user = currentUser()
+  if (
+    user.user_id !== userId &&
+    user.role !== "SUPPORT" &&
+    user.role !== "ADMIN"
+  ) {
+    throw new MockRuleError(403, "PERMISSION_DENIED", "Not your holdings")
+  }
+  return db.marketHoldings.filter(
+    (holding) => holding.user_id === userId && holding.quantity > 0
+  )
+}
+
+export function marketBook(itemId: string): BookView {
+  marketItemById(itemId) // 404s if the item does not exist
+  const open = db.marketOrders.filter(
+    (order) => order.item_id === itemId && order.status === "OPEN"
+  )
+
+  function aggregate(side: OrderSide): BookDepth[] {
+    const byPrice = new Map<string, BookDepth>()
+    for (const order of open) {
+      if (order.side !== side) continue
+      const key = order.price.amount_minor
+      const existing = byPrice.get(key)
+      if (existing) existing.orders += 1
+      else byPrice.set(key, { price: order.price, orders: 1 })
+    }
+    return [...byPrice.values()].sort((a, b) =>
+      side === "BUY"
+        ? Number(parse(b.price) - parse(a.price))
+        : Number(parse(a.price) - parse(b.price))
+    )
+  }
+
+  const buys = aggregate("BUY")
+  const sells = aggregate("SELL")
+  const best: NonNullable<BookView["best"]> = {}
+  if (buys[0]) best.bid = buys[0].price
+  if (sells[0]) best.ask = sells[0].price
+
+  return {
+    item_id: itemId,
+    buys,
+    sells,
+    ...(best.bid || best.ask ? { best } : {}),
+  }
+}
+
+/**
+ * The five-minute matching pass, run on demand.
+ *
+ * Cheapest sell first, oldest wins a tie, settles at the seller's price, never
+ * a self-trade, and a seller who no longer holds the item is skipped — the same
+ * rules the real matching engine enforces (see marketplace-service's README),
+ * reproduced here rather than waved at, because a mock that skips them would
+ * teach a screen to expect a trade the real service would refuse.
+ */
+export function runMarketMatching(): { status: "COMPLETED" } {
+  requireRole("SUPPORT", "ADMIN")
+  const itemIds = new Set(
+    db.marketOrders
+      .filter((order) => order.status === "OPEN")
+      .map((order) => order.item_id)
+  )
+
+  for (const itemId of itemIds) {
+    const buys = db.marketOrders
+      .filter(
+        (order) =>
+          order.item_id === itemId &&
+          order.status === "OPEN" &&
+          order.side === "BUY"
+      )
+      .sort(
+        (a, b) =>
+          Number(parse(b.price) - parse(a.price)) ||
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      )
+
+    for (const buy of buys) {
+      if (buy.status !== "OPEN") continue
+      const sell = db.marketOrders
+        .filter(
+          (order) =>
+            order.item_id === itemId &&
+            order.status === "OPEN" &&
+            order.side === "SELL"
+        )
+        .sort(
+          (a, b) =>
+            Number(parse(a.price) - parse(b.price)) ||
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        )
+        .find(
+          (candidate) =>
+            candidate.user_id !== buy.user_id &&
+            parse(candidate.price) <= parse(buy.price) &&
+            (holdingOf(candidate.user_id, itemId)?.quantity ?? 0) > 0
+        )
+      if (!sell) continue
+
+      const settlePrice = sell.price
+      const buyerWallet = db.wallets[buy.user_id]
+      const sellerWallet = db.wallets[sell.user_id]
+      if (!buyerWallet || !sellerWallet) continue
+      if (parse(buyerWallet.available) < parse(settlePrice)) continue
+
+      debit(buy.user_id, settlePrice, "MARKET_TRADE", itemId, "Item purchase")
+      credit(sell.user_id, settlePrice, "MARKET_TRADE", itemId, "Item sale")
+      adjustHolding(sell.user_id, itemId, -1)
+      adjustHolding(buy.user_id, itemId, 1)
+
+      const trade: Trade = {
+        id: id("trade"),
+        item_id: itemId,
+        buyer_id: buy.user_id,
+        seller_id: sell.user_id,
+        price: settlePrice,
+        matched_at: iso(),
+      }
+      db.marketTrades.unshift(trade)
+      buy.status = "FILLED"
+      buy.trade_id = trade.id
+      sell.status = "FILLED"
+      sell.trade_id = trade.id
+
+      const item = db.marketItems.find((candidate) => candidate.id === itemId)
+      const title = item?.title ?? "an item"
+      notify(buy.user_id, "TRADE_MATCHED", `You bought ${title}`, "", {
+        type: "TRADE",
+        id: trade.id,
+      })
+      notify(sell.user_id, "TRADE_MATCHED", `You sold ${title}`, "", {
+        type: "TRADE",
+        id: trade.id,
+      })
+    }
+  }
+
+  save()
+  return { status: "COMPLETED" }
+}
+
+// --- reviews (requirement 1.7) ----------------------------------------------
+
+function reviewsForGame(gameId: string): Review[] {
+  return db.userReviews[gameId] ?? []
+}
+
+function findUserReview(reviewId: string): { gameId: string; review: Review } {
+  for (const [gameId, reviews] of Object.entries(db.userReviews)) {
+    const review = reviews.find((candidate) => candidate.id === reviewId)
+    if (review) return { gameId, review }
+  }
+  throw new MockRuleError(404, "NOT_FOUND", "No such review")
+}
+
+function reviewWordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length
+}
+
+function assertReviewWordLimit(text: string): void {
+  if (!text.trim())
+    throw new MockRuleError(400, "VALIDATION_FAILED", "A review needs text")
+  if (reviewWordCount(text) > MAX_REVIEW_WORDS) {
+    throw new MockRuleError(
+      400,
+      "WORD_LIMIT_EXCEEDED",
+      `A review is at most ${MAX_REVIEW_WORDS} words`
+    )
+  }
+}
+
+/** Requirement 1.7: buyers, including a gift's recipient and someone who
+ *  refunded — anyone who was ever granted ownership, not just current owners. */
+export function everOwnedGame(userId: string, gameId: string): boolean {
+  return db.ownerships.some(
+    (entry) => entry.owner_id === userId && entry.game_id === gameId
+  )
+}
+
+export function createUserReview(input: {
+  game_id: string
+  text: string
+  sentiment: ReviewSentiment
+}): Review {
+  const user = currentUser()
+  if (!everOwnedGame(user.user_id, input.game_id)) {
+    throw new MockRuleError(403, "NOT_OWNER", "Only buyers can review a game")
+  }
+  assertReviewWordLimit(input.text)
+  const review: Review = {
+    id: id("rvw"),
+    author_id: user.user_id,
+    game_id: input.game_id,
+    text: input.text.trim(),
+    sentiment: input.sentiment,
+    status: "ACTIVE",
+    like_count: 0,
+    dislike_count: 0,
+    created_at: iso(),
+    edited_at: null,
+  }
+  db.userReviews[input.game_id] = [...reviewsForGame(input.game_id), review]
+  save()
+  return review
+}
+
+export function editUserReview(
+  reviewId: string,
+  text: string,
+  sentiment?: ReviewSentiment
+): Review {
+  const user = currentUser()
+  const { review } = findUserReview(reviewId)
+  if (review.author_id !== user.user_id) {
+    throw new MockRuleError(403, "NOT_AUTHOR", "That review is not yours")
+  }
+  if (review.status === "DELETED") {
+    throw new MockRuleError(
+      409,
+      "REVIEW_ALREADY_DELETED",
+      "Cannot edit a deleted review"
+    )
+  }
+  assertReviewWordLimit(text)
+  review.text = text.trim()
+  if (sentiment) review.sentiment = sentiment
+  review.status = "EDITED"
+  review.edited_at = iso()
+  save()
+  return review
+}
+
+export function deleteUserReview(reviewId: string): void {
+  const user = currentUser()
+  const { review } = findUserReview(reviewId)
+  if (review.author_id !== user.user_id) {
+    throw new MockRuleError(403, "NOT_AUTHOR", "That review is not yours")
+  }
+  if (review.status === "DELETED") {
+    throw new MockRuleError(
+      409,
+      "REVIEW_ALREADY_DELETED",
+      "Review already deleted"
+    )
+  }
+  review.status = "DELETED"
+  save()
+}
+
+/** Idempotent per `(review_id, user_id)`, the way the real `ReactionModel`
+ *  table is — a repeated reaction swaps or no-ops, and never double-counts. */
+export function reactToUserReview(
+  reviewId: string,
+  reactionType: ReviewSentiment
+): void {
+  const user = currentUser()
+  const { review } = findUserReview(reviewId)
+  if (review.author_id === user.user_id) {
+    throw new MockRuleError(
+      400,
+      "OWN_REVIEW_NOT_ALLOWED",
+      "You cannot react to your own review"
+    )
+  }
+  const perReview = db.reviewReactions[reviewId] ?? {}
+  const previous = perReview[user.user_id]
+  if (previous === reactionType) {
+    save()
+    return
+  }
+  if (previous === "LIKE") review.like_count = Math.max(0, review.like_count - 1)
+  if (previous === "DISLIKE")
+    review.dislike_count = Math.max(0, review.dislike_count - 1)
+  if (reactionType === "LIKE") review.like_count += 1
+  else review.dislike_count += 1
+  perReview[user.user_id] = reactionType
+  db.reviewReactions[reviewId] = perReview
+  save()
+}
+
+export function reportUserReview(reviewId: string, reason: string): void {
+  const user = currentUser()
+  const { review } = findUserReview(reviewId)
+  if (review.author_id === user.user_id) {
+    throw new MockRuleError(
+      400,
+      "OWN_REVIEW_NOT_ALLOWED",
+      "You cannot report your own review"
+    )
+  }
+  if (review.status === "DELETED") {
+    throw new MockRuleError(
+      409,
+      "REVIEW_ALREADY_DELETED",
+      "Cannot report a deleted review"
+    )
+  }
+  if (reason.trim().length < 3) {
+    throw new MockRuleError(400, "VALIDATION_FAILED", "Say a little more")
+  }
+  const count = (db.reviewReportCounts[reviewId] ?? 0) + 1
+  if (count > 10) {
+    throw new MockRuleError(
+      422,
+      "TOO_MANY_REPORTS",
+      "Too many reports on this review"
+    )
+  }
+  db.reviewReportCounts[reviewId] = count
+  save()
+}
+
+export function gameReviews(
+  gameId: string,
+  filters: {
+    limit?: number
+    offset?: number
+    sort_by?: ReviewSortBy
+    sort_order?: SortOrder
+  }
+): { reviews: Review[]; total: number; page: number; page_size: number } {
+  const limit = filters.limit ?? 20
+  const offset = filters.offset ?? 0
+  const sortBy = filters.sort_by ?? "created_at"
+  const sortOrder = filters.sort_order ?? "desc"
+
+  const list = reviewsForGame(gameId).filter(
+    (review) => review.status !== "DELETED"
+  )
+  const sorted = [...list].sort((a, b) => {
+    const av =
+      sortBy === "created_at" ? new Date(a.created_at).getTime() : a[sortBy]
+    const bv =
+      sortBy === "created_at" ? new Date(b.created_at).getTime() : b[sortBy]
+    return sortOrder === "asc" ? av - bv : bv - av
+  })
+  const page = sorted.slice(offset, offset + limit)
+  return {
+    reviews: page,
+    // The real service's own bug, reproduced rather than papered over: `total`
+    // is the size of this page, not of every matching row — see the type's doc.
+    total: page.length,
+    page: Math.floor(offset / limit) + 1,
+    page_size: limit,
+  }
+}
+
+export function averageRating(gameId: string): {
+  game_id: string
+  average_rating: number | null
+  total_reviews: number
+  likes: number
+  dislikes: number
+} {
+  const list = reviewsForGame(gameId).filter(
+    (review) => review.status !== "DELETED"
+  )
+  const likes = list.filter((review) => review.sentiment === "LIKE").length
+  const dislikes = list.length - likes
+  return {
+    game_id: gameId,
+    average_rating: list.length > 0 ? likes / list.length : null,
+    total_reviews: list.length,
+    likes,
+    dislikes,
+  }
+}
+
+// --- festivals (requirement 1.9) --------------------------------------------
+
+function festivalById(festivalId: string): FestivalDetailView {
+  const festival = db.festivals.find((candidate) => candidate.id === festivalId)
+  if (!festival) throw new MockRuleError(404, "NOT_FOUND", "No such festival")
+  return festival
+}
+
+/** Recomputed from the live ACTIVE promotion tied to this festival, never
+ *  stored twice — the same read-model join catalog_sync_service.py performs
+ *  from `game-events` in the real service. */
+function festivalGameView(
+  festival: FestivalDetailView,
+  game: FestivalGameView
+): FestivalGameView {
+  const active = promotionsOf(game.game_id).find(
+    (promotion) =>
+      promotion.festival_id === festival.id && promotion.state === "ACTIVE"
+  )
+  if (!active) return { ...game, discounted_price: null, discount_bps: null }
+  const listPrice = db.games.find((candidate) => candidate.id === game.game_id)
+    ?.final_price
+  return {
+    ...game,
+    discounted_price: listPrice
+      ? money(parse(listPrice) - share(parse(listPrice), active.discount_bps))
+      : null,
+    discount_bps: active.discount_bps,
+  }
+}
+
+function festivalPromotionSnapshots(
+  festival: FestivalDetailView
+): PromotionSnapshotView[] {
+  return festival.games.flatMap((game) =>
+    promotionsOf(game.game_id)
+      .filter((promotion) => promotion.festival_id === festival.id)
+      .map((promotion) => {
+        const listPrice =
+          db.games.find((candidate) => candidate.id === game.game_id)
+            ?.final_price ?? null
+        return {
+          promotion_id: promotion.id,
+          game_id: promotion.game_id,
+          state: promotion.state,
+          discount_bps: promotion.discount_bps,
+          starts_at: promotion.starts_at,
+          ends_at: promotion.ends_at,
+          list_price: listPrice,
+          effective_price: listPrice
+            ? money(
+                parse(listPrice) - share(parse(listPrice), promotion.discount_bps)
+              )
+            : null,
+          updated_at: promotion.created_at ?? iso(),
+        }
+      })
+  )
+}
+
+function toFestivalView(festival: FestivalDetailView): FestivalView {
+  return {
+    id: festival.id,
+    name: festival.name,
+    description: festival.description,
+    state: festival.state,
+    starts_at: festival.starts_at,
+    ends_at: festival.ends_at,
+    game_count: festival.game_count,
+    created_by: festival.created_by,
+    created_at: festival.created_at,
+    started_at: festival.started_at,
+    ended_at: festival.ended_at,
+  }
+}
+
+function toFestivalDetail(festival: FestivalDetailView): FestivalDetailView {
+  return {
+    ...festival,
+    games: festival.games.map((game) => festivalGameView(festival, game)),
+    promotions: festivalPromotionSnapshots(festival),
+  }
+}
+
+export function festivalsList(filters: {
+  limit?: number
+  offset?: number
+}): { items: FestivalView[]; total: number; limit: number; offset: number } {
+  const limit = filters.limit ?? 20
+  const offset = filters.offset ?? 0
+  const views = db.festivals.map(toFestivalView)
+  return {
+    items: views.slice(offset, offset + limit),
+    total: views.length,
+    limit,
+    offset,
+  }
+}
+
+export function festivalDetail(festivalId: string): FestivalDetailView {
+  return toFestivalDetail(festivalById(festivalId))
+}
+
+export function createFestival(input: {
+  name: string
+  description?: string
+  starts_at: string
+  ends_at: string
+}): FestivalDetailView {
+  const user = requireRole("ADMIN")
+  const name = input.name.trim()
+  if (!name || name.length > 200) {
+    throw new MockRuleError(
+      400,
+      "FESTIVAL_NAME_REQUIRED",
+      "A festival needs a name, at most 200 characters"
+    )
+  }
+  const startsAt = new Date(input.starts_at)
+  const endsAt = new Date(input.ends_at)
+  if (
+    Number.isNaN(startsAt.getTime()) ||
+    Number.isNaN(endsAt.getTime()) ||
+    endsAt.getTime() <= startsAt.getTime() ||
+    endsAt.getTime() < Date.now()
+  ) {
+    throw new MockRuleError(
+      400,
+      "FESTIVAL_WINDOW_INVALID",
+      "The window must end after it starts, and after now"
+    )
+  }
+  const festival: FestivalDetailView = {
+    id: id("fest"),
+    name,
+    description: (input.description ?? "").trim(),
+    state: "DRAFT",
+    starts_at: input.starts_at,
+    ends_at: input.ends_at,
+    game_count: 0,
+    created_by: user.user_id,
+    created_at: iso(),
+    started_at: null,
+    ended_at: null,
+    games: [],
+    promotions: [],
+  }
+  db.festivals.unshift(festival)
+  save()
+  return toFestivalDetail(festival)
+}
+
+function assertFestivalEditable(festival: FestivalDetailView): void {
+  if (festival.state !== "DRAFT" && festival.state !== "ACTIVE") {
+    throw new MockRuleError(
+      409,
+      "FESTIVAL_WRONG_STATE",
+      `A festival in ${festival.state} cannot be edited`
+    )
+  }
+}
+
+export function rescheduleFestival(
+  festivalId: string,
+  startsAt: string,
+  endsAt: string
+): FestivalDetailView {
+  requireRole("ADMIN")
+  const festival = festivalById(festivalId)
+  if (festival.state !== "DRAFT") {
+    throw new MockRuleError(
+      409,
+      "FESTIVAL_WRONG_STATE",
+      "Only a draft festival can be rescheduled"
+    )
+  }
+  if (new Date(endsAt).getTime() <= new Date(startsAt).getTime()) {
+    throw new MockRuleError(
+      400,
+      "FESTIVAL_WINDOW_INVALID",
+      "End must be after start"
+    )
+  }
+  festival.starts_at = startsAt
+  festival.ends_at = endsAt
+  save()
+  return toFestivalDetail(festival)
+}
+
+export function addFestivalGame(
+  festivalId: string,
+  gameId: string
+): FestivalDetailView {
+  const user = requireRole("ADMIN")
+  const festival = festivalById(festivalId)
+  assertFestivalEditable(festival)
+  const game = db.games.find((candidate) => candidate.id === gameId)
+  if (!game) throw new MockRuleError(404, "GAME_UNKNOWN", "No such game")
+  if (game.state !== "PUBLISHED" && game.state !== "PREORDER") {
+    throw new MockRuleError(
+      422,
+      "GAME_NOT_PUBLISHED",
+      "Only a published game can join a festival"
+    )
+  }
+  if (festival.games.some((entry) => entry.game_id === gameId)) {
+    throw new MockRuleError(
+      409,
+      "GAME_ALREADY_IN_FESTIVAL",
+      "That game is already in this festival"
+    )
+  }
+  festival.games.push({
+    game_id: game.id,
+    title: game.title,
+    developer_id: game.developer_id,
+    added_by: user.user_id,
+    added_at: iso(),
+    discounted_price: null,
+    discount_bps: null,
+  })
+  festival.game_count = festival.games.length
+  save()
+  return toFestivalDetail(festival)
+}
+
+export function removeFestivalGame(
+  festivalId: string,
+  gameId: string
+): FestivalDetailView {
+  requireRole("ADMIN")
+  const festival = festivalById(festivalId)
+  assertFestivalEditable(festival)
+  const index = festival.games.findIndex((entry) => entry.game_id === gameId)
+  if (index === -1) {
+    throw new MockRuleError(
+      404,
+      "GAME_NOT_IN_FESTIVAL",
+      "That game is not in this festival"
+    )
+  }
+  festival.games.splice(index, 1)
+  festival.game_count = festival.games.length
+  save()
+  return toFestivalDetail(festival)
+}
+
+export function startFestival(festivalId: string): FestivalDetailView {
+  requireRole("ADMIN")
+  const festival = festivalById(festivalId)
+  if (festival.state !== "DRAFT") {
+    throw new MockRuleError(
+      409,
+      "FESTIVAL_WRONG_STATE",
+      `Cannot start from ${festival.state}`
+    )
+  }
+  if (festival.games.length === 0) {
+    throw new MockRuleError(
+      422,
+      "FESTIVAL_HAS_NO_GAMES",
+      "Add at least one game first"
+    )
+  }
+  festival.state = "ACTIVE"
+  festival.started_at = iso()
+
+  // Requirement 1.9: platform-wide. Every account is told, mirroring
+  // festival-service's call to auth-profile-service for the full user directory.
+  for (const account of db.users) {
+    notify(
+      account.user_id,
+      "FESTIVAL_STARTED",
+      `${festival.name} is live`,
+      festival.description,
+      { type: "FESTIVAL", id: festival.id }
+    )
+  }
+  save()
+  return toFestivalDetail(festival)
+}
+
+export function endFestival(festivalId: string): FestivalDetailView {
+  requireRole("ADMIN")
+  const festival = festivalById(festivalId)
+  if (festival.state !== "ACTIVE") {
+    throw new MockRuleError(
+      409,
+      "FESTIVAL_WRONG_STATE",
+      `Cannot end from ${festival.state}`
+    )
+  }
+  festival.state = "ENDED"
+  festival.ended_at = iso()
+  save()
+  return toFestivalDetail(festival)
+}
+
+export function cancelFestival(festivalId: string): FestivalDetailView {
+  requireRole("ADMIN")
+  const festival = festivalById(festivalId)
+  if (festival.state !== "DRAFT" && festival.state !== "ACTIVE") {
+    throw new MockRuleError(
+      409,
+      "FESTIVAL_WRONG_STATE",
+      `Cannot cancel from ${festival.state}`
+    )
+  }
+  festival.state = "CANCELLED"
+  save()
+  return toFestivalDetail(festival)
+}
+
+// --- community (requirement 1.8) --------------------------------------------
+
+function commentsOf(postId: string): Comment[] {
+  return db.comments[postId] ?? []
+}
+
+function communityPostById(postId: string): Post {
+  const post = db.posts.find((candidate) => candidate.id === postId)
+  if (!post) throw new MockRuleError(404, "NOT_FOUND", "No such post")
+  return post
+}
+
+function paginateCursor<T extends { id: string }>(
+  items: T[],
+  cursor: string | null,
+  limit: number
+): { items: T[]; next_cursor: string | null; has_more: boolean } {
+  const startIndex = cursor
+    ? Math.max(
+        0,
+        items.findIndex((item) => item.id === cursor) + 1
+      )
+    : 0
+  const page = items.slice(startIndex, startIndex + limit)
+  const hasMore = startIndex + limit < items.length
+  return {
+    items: page,
+    next_cursor: hasMore ? (page.at(-1)?.id ?? null) : null,
+    has_more: hasMore,
+  }
+}
+
+function sumReactions(reactions: Record<string, number>): number {
+  return Object.values(reactions).reduce((total, count) => total + count, 0)
+}
+
+function sortPosts(posts: Post[], sort: FeedSort): Post[] {
+  const sorted = [...posts]
+  if (sort === "most_viewed") {
+    sorted.sort((a, b) => b.view_count - a.view_count)
+  } else if (sort === "most_reacted") {
+    sorted.sort((a, b) => sumReactions(b.reactions) - sumReactions(a.reactions))
+  } else {
+    sorted.sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+  }
+  return sorted
+}
+
+export function gameFeed(
+  gameId: string,
+  filters: { sort?: FeedSort; cursor?: string | null; limit?: number }
+) {
+  const visible = db.posts.filter(
+    (post) => post.game_id === gameId && post.status === "ACTIVE"
+  )
+  const sorted = sortPosts(visible, filters.sort ?? "newest")
+  return paginateCursor(sorted, filters.cursor ?? null, filters.limit ?? 20)
+}
+
+export function exploreFeed(filters: {
+  sort?: FeedSort
+  cursor?: string | null
+  limit?: number
+}) {
+  const visible = db.posts.filter((post) => post.status === "ACTIVE")
+  const sorted = sortPosts(visible, filters.sort ?? "newest")
+  return paginateCursor(sorted, filters.cursor ?? null, filters.limit ?? 20)
+}
+
+export function searchCommunityPosts(
+  q: string,
+  filters: { cursor?: string | null; limit?: number }
+) {
+  const query = q.trim().toLowerCase()
+  const matches = db.posts.filter(
+    (post) =>
+      post.status === "ACTIVE" &&
+      (post.body.toLowerCase().includes(query) ||
+        post.tags.some((tag) => tag.toLowerCase().includes(query)))
+  )
+  return paginateCursor(
+    sortPosts(matches, "newest"),
+    filters.cursor ?? null,
+    filters.limit ?? 20
+  )
+}
+
+export function viewCommunityPost(postId: string): Post {
+  const post = communityPostById(postId)
+  post.view_count += 1
+  save()
+  return post
+}
+
+function attachmentKind(file: File): "IMAGE" | "VIDEO" | "FILE" {
+  if (file.type.startsWith("image/")) return "IMAGE"
+  if (file.type.startsWith("video/")) return "VIDEO"
+  return "FILE"
+}
+
+export function createCommunityPost(input: {
+  game_id: string
+  body?: string
+  spoiler?: boolean
+  tags?: string[]
+  files?: File[]
+}): Post {
+  const user = currentUser()
+  const body = (input.body ?? "").trim()
+  if (body.length > 5000) {
+    throw new MockRuleError(400, "VALIDATION_FAILED", "At most 5000 characters")
+  }
+  const post: Post = {
+    id: id("post"),
+    game_id: input.game_id,
+    author_id: user.user_id,
+    body,
+    spoiler: input.spoiler ?? false,
+    tags: (input.tags ?? []).slice(0, 10),
+    // Real object URLs, so an attached picture actually renders in the demo —
+    // released when the tab closes, same as any other blob: URL's lifetime.
+    attachments: (input.files ?? []).map((file) => ({
+      id: id("att"),
+      kind: attachmentKind(file),
+      media_ref: URL.createObjectURL(file),
+      status: "READY",
+    })),
+    reactions: {},
+    comment_count: 0,
+    view_count: 0,
+    feedback_score: 0,
+    status: "ACTIVE",
+    created_at: iso(),
+    edited_at: null,
+  }
+  db.posts.unshift(post)
+  db.comments[post.id] = []
+  save()
+  return post
+}
+
+export function editCommunityPost(
+  postId: string,
+  body: { body?: string | null; spoiler?: boolean; tags?: string[] }
+): Post {
+  const user = currentUser()
+  const post = communityPostById(postId)
+  if (post.author_id !== user.user_id) {
+    throw new MockRuleError(403, "PERMISSION_DENIED", "That post is not yours")
+  }
+  if (post.status !== "ACTIVE") {
+    throw new MockRuleError(409, "CONFLICT", "This post is no longer editable")
+  }
+  if (body.body !== undefined) post.body = (body.body ?? "").trim()
+  if (body.spoiler !== undefined) post.spoiler = body.spoiler
+  if (body.tags !== undefined) post.tags = body.tags.slice(0, 10)
+  post.edited_at = iso()
+  save()
+  return post
+}
+
+export function deleteCommunityPost(postId: string): void {
+  const user = currentUser()
+  const post = communityPostById(postId)
+  const staff = user.role === "SUPPORT" || user.role === "ADMIN"
+  if (post.author_id !== user.user_id && !staff) {
+    throw new MockRuleError(403, "PERMISSION_DENIED", "That post is not yours")
+  }
+  post.status =
+    staff && post.author_id !== user.user_id ? "REMOVED_BY_MODERATION" : "DELETED"
+  save()
+}
+
+export function listComments(postId: string, cursor: string | null, limit: number) {
+  const list = commentsOf(postId).filter((comment) => comment.status === "ACTIVE")
+  const sorted = [...list].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  )
+  return paginateCursor(sorted, cursor, limit)
+}
+
+export function addCommunityComment(postId: string, body: string): Comment {
+  const user = currentUser()
+  const post = communityPostById(postId)
+  if (post.status !== "ACTIVE") {
+    throw new MockRuleError(
+      409,
+      "CONFLICT",
+      "This post no longer accepts comments"
+    )
+  }
+  const text = body.trim()
+  if (!text || text.length > 1000) {
+    throw new MockRuleError(
+      400,
+      "VALIDATION_FAILED",
+      "Between 1 and 1000 characters"
+    )
+  }
+  const comment: Comment = {
+    id: id("cmt"),
+    post_id: postId,
+    author_id: user.user_id,
+    body: text,
+    status: "ACTIVE",
+    created_at: iso(),
+    edited_at: null,
+  }
+  db.comments[postId] = [...commentsOf(postId), comment]
+  post.comment_count += 1
+  save()
+  return comment
+}
+
+function findCommunityComment(
+  commentId: string
+): { postId: string; comment: Comment } {
+  for (const [postId, comments] of Object.entries(db.comments)) {
+    const comment = comments.find((candidate) => candidate.id === commentId)
+    if (comment) return { postId, comment }
+  }
+  throw new MockRuleError(404, "NOT_FOUND", "No such comment")
+}
+
+export function editCommunityComment(commentId: string, body: string): Comment {
+  const user = currentUser()
+  const { comment } = findCommunityComment(commentId)
+  if (comment.author_id !== user.user_id) {
+    throw new MockRuleError(403, "PERMISSION_DENIED", "That comment is not yours")
+  }
+  const text = body.trim()
+  if (!text || text.length > 1000) {
+    throw new MockRuleError(
+      400,
+      "VALIDATION_FAILED",
+      "Between 1 and 1000 characters"
+    )
+  }
+  comment.body = text
+  comment.edited_at = iso()
+  save()
+  return comment
+}
+
+export function deleteCommunityComment(commentId: string): void {
+  const user = currentUser()
+  const { postId, comment } = findCommunityComment(commentId)
+  const staff = user.role === "SUPPORT" || user.role === "ADMIN"
+  if (comment.author_id !== user.user_id && !staff) {
+    throw new MockRuleError(403, "PERMISSION_DENIED", "That comment is not yours")
+  }
+  comment.status =
+    staff && comment.author_id !== user.user_id
+      ? "REMOVED_BY_MODERATION"
+      : "DELETED"
+  const post = db.posts.find((candidate) => candidate.id === postId)
+  if (post) post.comment_count = Math.max(0, post.comment_count - 1)
+  save()
+}
+
+function reactionSummaryOf(postId: string) {
+  const user = currentUser()
+  const post = communityPostById(postId)
+  return {
+    post_id: postId,
+    reactions: post.reactions,
+    total: sumReactions(post.reactions),
+    my_reaction: db.postReactions[postId]?.[user.user_id] ?? null,
+  }
+}
+
+/** PUT semantics: re-sending the currently-held emoji clears it, matching the
+ *  real `PUT`/`DELETE` pair on `.../reactions`. */
+export function setPostReaction(postId: string, emoji: string) {
+  const user = currentUser()
+  const post = communityPostById(postId)
+  if (!(REACTION_EMOJI as readonly string[]).includes(emoji)) {
+    throw new MockRuleError(422, "INVALID_ARGUMENT", "Not a recognised reaction")
+  }
+  const perPost = db.postReactions[postId] ?? {}
+  const previous = perPost[user.user_id]
+
+  if (previous === emoji) {
+    delete perPost[user.user_id]
+    post.reactions[emoji] = Math.max(0, (post.reactions[emoji] ?? 0) - 1)
+  } else {
+    if (previous) {
+      post.reactions[previous] = Math.max(0, (post.reactions[previous] ?? 0) - 1)
+    }
+    perPost[user.user_id] = emoji
+    post.reactions[emoji] = (post.reactions[emoji] ?? 0) + 1
+  }
+  db.postReactions[postId] = perPost
+  post.feedback_score = sumReactions(post.reactions)
+  save()
+  return reactionSummaryOf(postId)
+}
+
+export function clearPostReaction(postId: string) {
+  const user = currentUser()
+  const post = communityPostById(postId)
+  const perPost = db.postReactions[postId] ?? {}
+  const previous = perPost[user.user_id]
+  if (previous) {
+    delete perPost[user.user_id]
+    post.reactions[previous] = Math.max(0, (post.reactions[previous] ?? 0) - 1)
+    post.feedback_score = sumReactions(post.reactions)
+  }
+  db.postReactions[postId] = perPost
+  save()
+  return reactionSummaryOf(postId)
+}
+
+/** Reporting stays open to a banned user — the rule only shuts off posting. */
+export function reportCommunityPost(postId: string, reason: string): Report {
+  const user = currentUser()
+  communityPostById(postId)
+  const text = reason.trim()
+  if (text.length < 1 || text.length > 1000) {
+    throw new MockRuleError(
+      400,
+      "VALIDATION_FAILED",
+      "Between 1 and 1000 characters"
+    )
+  }
+  const report: Report = {
+    id: id("rpt"),
+    target_type: "POST",
+    target_id: postId,
+    reporter_id: user.user_id,
+    reason: text,
+    status: "OPEN",
+    resolved_by: null,
+    resolution_note: null,
+    created_at: iso(),
+    resolved_at: null,
+  }
+  db.communityReports.unshift(report)
+  save()
+  return report
+}
+
+export function reportCommunityComment(
+  commentId: string,
+  reason: string
+): Report {
+  const user = currentUser()
+  findCommunityComment(commentId)
+  const text = reason.trim()
+  if (text.length < 1 || text.length > 1000) {
+    throw new MockRuleError(
+      400,
+      "VALIDATION_FAILED",
+      "Between 1 and 1000 characters"
+    )
+  }
+  const report: Report = {
+    id: id("rpt"),
+    target_type: "COMMENT",
+    target_id: commentId,
+    reporter_id: user.user_id,
+    reason: text,
+    status: "OPEN",
+    resolved_by: null,
+    resolution_note: null,
+    created_at: iso(),
+    resolved_at: null,
+  }
+  db.communityReports.unshift(report)
+  save()
+  return report
+}
+
+export function communityModerationQueue(cursor: string | null, limit: number) {
+  requireRole("SUPPORT", "ADMIN")
+  const open = db.communityReports.filter((report) => report.status === "OPEN")
+  return paginateCursor(open, cursor, limit)
+}
+
+export function resolveCommunityReport(
+  reportId: string,
+  action: ResolutionAction,
+  note: string
+): Report {
+  const user = requireRole("SUPPORT", "ADMIN")
+  const report = db.communityReports.find((candidate) => candidate.id === reportId)
+  if (!report) throw new MockRuleError(404, "NOT_FOUND", "No such report")
+  if (report.status !== "OPEN") {
+    throw new MockRuleError(409, "CONFLICT", "That report was already resolved")
+  }
+  if (!note.trim()) {
+    throw new MockRuleError(400, "VALIDATION_FAILED", "A resolution needs a note")
+  }
+
+  if (action === "REMOVE") {
+    if (report.target_type === "POST") {
+      const post = db.posts.find((candidate) => candidate.id === report.target_id)
+      if (post) post.status = "REMOVED_BY_MODERATION"
+    } else {
+      const { postId, comment } = findCommunityComment(report.target_id)
+      comment.status = "REMOVED_BY_MODERATION"
+      const post = db.posts.find((candidate) => candidate.id === postId)
+      if (post) post.comment_count = Math.max(0, post.comment_count - 1)
+    }
+  }
+
+  report.status = action === "REMOVE" ? "RESOLVED_REMOVED" : "RESOLVED_DISMISSED"
+  report.resolved_by = user.user_id
+  report.resolution_note = note.trim()
+  report.resolved_at = iso()
+  save()
+  return report
 }

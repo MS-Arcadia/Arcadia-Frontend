@@ -371,6 +371,267 @@ route("post", API.notifications.read(":id"), ({ params }) => {
   return note
 })
 
+// --- marketplace (requirement 1.6) ------------------------------------------
+
+route("get", API.marketplace.items, ({ query }) =>
+  paginate(
+    mock.marketItemsOf({ game_id: query.get("game_id") ?? undefined }),
+    query
+  )
+)
+route("get", API.marketplace.item(":id"), ({ params }) =>
+  mock.marketItemById(params[0])
+)
+route("get", API.marketplace.book(":id"), ({ params }) =>
+  mock.marketBook(params[0])
+)
+route("post", API.marketplace.items, ({ body }) =>
+  mock.createMarketItem({
+    game_id: str(body.game_id),
+    title: str(body.title),
+    description: str(body.description),
+    image_url: str(body.image_url),
+    buy_value: str(body.buy_value, "0"),
+    sell_value: str(body.sell_value, "0"),
+  })
+)
+route("post", API.marketplace.distribute(":id"), ({ params, body }) =>
+  mock.distributeMarketItem(params[0], Number(body.count ?? 0))
+)
+route("get", API.marketplace.orders, ({ query }) =>
+  paginate(mock.myMarketOrders(), query)
+)
+route("post", API.marketplace.orders, ({ body }) =>
+  mock.placeMarketOrder({
+    item_id: str(body.item_id),
+    side: str(body.side, "BUY") as "BUY" | "SELL",
+    price: str(body.price, "0"),
+  })
+)
+route("delete", API.marketplace.cancelOrder(":id"), ({ params }) =>
+  mock.cancelMarketOrder(params[0])
+)
+route("get", API.marketplace.trades, ({ query }) =>
+  paginate(mock.myMarketTrades(), query)
+)
+route("get", API.marketplace.holdings(":id"), ({ params }) => ({
+  items: mock.holdingsOf(params[0]),
+  total: mock.holdingsOf(params[0]).length,
+}))
+route("post", API.marketplace.runMatching, () => mock.runMarketMatching())
+
+// --- reviews (requirement 1.7) ----------------------------------------------
+
+route("post", API.reviews.create, ({ body }) =>
+  mock.createUserReview({
+    game_id: str(body.game_id),
+    text: str(body.text),
+    sentiment: str(body.sentiment, "LIKE") as "LIKE" | "DISLIKE",
+  })
+)
+route("put", API.reviews.edit(":id"), ({ params, body }) =>
+  mock.editUserReview(
+    params[0],
+    str(body.text),
+    body.sentiment ? (str(body.sentiment) as "LIKE" | "DISLIKE") : undefined
+  )
+)
+route("delete", API.reviews.remove(":id"), ({ params }) => {
+  mock.deleteUserReview(params[0])
+  return {}
+})
+route("get", API.reviews.forGame(":id"), ({ params, query }) =>
+  mock.gameReviews(params[0], {
+    limit: query.get("limit") ? Number(query.get("limit")) : undefined,
+    offset: query.get("offset") ? Number(query.get("offset")) : undefined,
+    sort_by: (query.get("sort_by") ?? undefined) as
+      | "created_at"
+      | "like_count"
+      | "dislike_count"
+      | undefined,
+    sort_order: (query.get("sort_order") ?? undefined) as "asc" | "desc" | undefined,
+  })
+)
+route("get", API.reviews.rating(":id"), ({ params }) =>
+  mock.averageRating(params[0])
+)
+route("post", API.reviews.report(":id"), ({ params, body }) => {
+  mock.reportUserReview(params[0], str(body.reason))
+  return { message: "Review reported successfully" }
+})
+route("post", API.reviews.react(":id"), ({ params, body }) => {
+  const reactionType = str(body.reaction_type).toUpperCase()
+  if (reactionType !== "LIKE" && reactionType !== "DISLIKE") {
+    throw new MockRuleError(
+      400,
+      "INVALID_ARGUMENT",
+      "Invalid reaction type. Use LIKE or DISLIKE"
+    )
+  }
+  mock.reactToUserReview(params[0], reactionType)
+  return { message: `Reaction ${reactionType} added successfully` }
+})
+// Support/Admin only, per the real endpoint — but review-service's own API has
+// no route to *discover* an open report's id, so nothing in this app's UI
+// calls this today (see the frontend's known-gaps note). Registered anyway,
+// against whatever report id a caller already has out of band, so the
+// endpoint behaves correctly the day a listing route exists to drive it.
+route(
+  "post",
+  API.reviews.resolveReport(":id", ":reportId"),
+  ({ params, query }) => {
+    mock.requireRole("SUPPORT", "ADMIN")
+    if (query.get("delete_review") === "true") mock.deleteUserReview(params[0])
+    return mock.gameReviews(params[0], {}).reviews[0] ?? {}
+  }
+)
+
+// --- festivals (requirement 1.9) --------------------------------------------
+
+route("get", API.festivals.list, ({ query }) =>
+  mock.festivalsList({
+    limit: query.get("limit") ? Number(query.get("limit")) : undefined,
+    offset: query.get("offset") ? Number(query.get("offset")) : undefined,
+  })
+)
+route("get", API.festivals.detail(":id"), ({ params }) =>
+  mock.festivalDetail(params[0])
+)
+route("post", API.festivals.create, ({ body }) =>
+  mock.createFestival({
+    name: str(body.name),
+    description: str(body.description),
+    starts_at: str(body.starts_at),
+    ends_at: str(body.ends_at),
+  })
+)
+route("patch", API.festivals.reschedule(":id"), ({ params, body }) =>
+  mock.rescheduleFestival(params[0], str(body.starts_at), str(body.ends_at))
+)
+route("post", API.festivals.addGame(":id"), ({ params, body }) =>
+  mock.addFestivalGame(params[0], str(body.game_id))
+)
+route(
+  "delete",
+  API.festivals.removeGame(":id", ":gameId"),
+  ({ params }) => mock.removeFestivalGame(params[0], params[1])
+)
+route("post", API.festivals.start(":id"), ({ params }) =>
+  mock.startFestival(params[0])
+)
+route("post", API.festivals.end(":id"), ({ params }) =>
+  mock.endFestival(params[0])
+)
+route("post", API.festivals.cancel(":id"), ({ params }) =>
+  mock.cancelFestival(params[0])
+)
+
+// --- community (requirement 1.8) --------------------------------------------
+
+route("get", API.community.gameFeed(":id"), ({ params, query }) =>
+  mock.gameFeed(params[0], {
+    sort: (query.get("sort") ?? undefined) as
+      | "newest"
+      | "most_viewed"
+      | "most_reacted"
+      | undefined,
+    cursor: query.get("cursor"),
+    limit: query.get("limit") ? Number(query.get("limit")) : undefined,
+  })
+)
+route("get", API.community.exploreFeed, ({ query }) =>
+  mock.exploreFeed({
+    sort: (query.get("sort") ?? undefined) as
+      | "newest"
+      | "most_viewed"
+      | "most_reacted"
+      | undefined,
+    cursor: query.get("cursor"),
+    limit: query.get("limit") ? Number(query.get("limit")) : undefined,
+  })
+)
+// Declared before `posts/:id` — otherwise "search" is read as a post id, the
+// same collision community-service's own router has to avoid.
+route("get", API.community.search, ({ query }) =>
+  mock.searchCommunityPosts(query.get("q") ?? "", {
+    cursor: query.get("cursor"),
+    limit: query.get("limit") ? Number(query.get("limit")) : undefined,
+  })
+)
+route("post", API.community.createPost, ({ body }) =>
+  mock.createCommunityPost({
+    game_id: str(body.game_id),
+    body: str(body.body),
+    spoiler: body.spoiler === true || body.spoiler === "true",
+    tags: Array.isArray(body.tags) ? (body.tags as string[]) : [],
+  })
+)
+route("post", API.community.createPostMultipart, ({ body }) =>
+  mock.createCommunityPost({
+    game_id: str(body.game_id),
+    body: str(body.body),
+    spoiler: body.spoiler === true || body.spoiler === "true",
+    tags: Array.isArray(body.tags) ? (body.tags as string[]) : [],
+    files: Array.isArray(body.files) ? (body.files as File[]) : [],
+  })
+)
+route("get", API.community.post(":id"), ({ params }) =>
+  mock.viewCommunityPost(params[0])
+)
+route("patch", API.community.editPost(":id"), ({ params, body }) =>
+  mock.editCommunityPost(params[0], {
+    body: typeof body.body === "string" ? body.body : undefined,
+    spoiler: typeof body.spoiler === "boolean" ? body.spoiler : undefined,
+    tags: Array.isArray(body.tags) ? (body.tags as string[]) : undefined,
+  })
+)
+route("delete", API.community.deletePost(":id"), ({ params }) => {
+  mock.deleteCommunityPost(params[0])
+  return {}
+})
+route("get", API.community.comments(":id"), ({ params, query }) =>
+  mock.listComments(
+    params[0],
+    query.get("cursor"),
+    query.get("limit") ? Number(query.get("limit")) : 20
+  )
+)
+route("post", API.community.comments(":id"), ({ params, body }) =>
+  mock.addCommunityComment(params[0], str(body.body))
+)
+route("patch", API.community.editComment(":id"), ({ params, body }) =>
+  mock.editCommunityComment(params[0], str(body.body))
+)
+route("delete", API.community.deleteComment(":id"), ({ params }) => {
+  mock.deleteCommunityComment(params[0])
+  return {}
+})
+route("put", API.community.reaction(":id"), ({ params, body }) =>
+  mock.setPostReaction(params[0], str(body.emoji))
+)
+route("delete", API.community.reaction(":id"), ({ params }) =>
+  mock.clearPostReaction(params[0])
+)
+route("post", API.community.reportPost(":id"), ({ params, body }) =>
+  mock.reportCommunityPost(params[0], str(body.reason))
+)
+route("post", API.community.reportComment(":id"), ({ params, body }) =>
+  mock.reportCommunityComment(params[0], str(body.reason))
+)
+route("get", API.community.moderationQueue, ({ query }) =>
+  mock.communityModerationQueue(
+    query.get("cursor"),
+    query.get("limit") ? Number(query.get("limit")) : 20
+  )
+)
+route("post", API.community.resolveReport(":id"), ({ params, body }) =>
+  mock.resolveCommunityReport(
+    params[0],
+    str(body.action, "DISMISS") as "REMOVE" | "DISMISS",
+    str(body.note)
+  )
+)
+
 // --- the adapter itself ----------------------------------------------------
 
 /** Enough latency that loading states are visible while building, not enough to
@@ -410,6 +671,27 @@ const adapter: AxiosAdapter = async (config: InternalAxiosRequestConfig) => {
     } catch {
       body = {}
     }
+  } else if (
+    typeof FormData !== "undefined" &&
+    config.data instanceof FormData
+  ) {
+    // community's multipart post: every scalar field arrives as a string, and
+    // `files` can repeat — `getAll` is what a real multipart parser gives a
+    // handler for a repeated field, so this mirrors that rather than losing
+    // every file but the last.
+    const form = config.data
+    for (const [key, value] of form.entries()) {
+      if (key === "files") continue
+      body[key] = typeof value === "string" ? value : value
+    }
+    if (typeof body.tags === "string") {
+      try {
+        body.tags = JSON.parse(body.tags)
+      } catch {
+        body.tags = []
+      }
+    }
+    body.files = form.getAll("files").filter((entry): entry is File => entry instanceof File)
   } else if (config.data && typeof config.data === "object") {
     body = config.data as Record<string, unknown>
   }

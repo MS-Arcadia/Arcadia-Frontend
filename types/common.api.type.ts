@@ -19,12 +19,22 @@ export interface Money {
   currency: string
 }
 
-/** Every list endpoint on the platform answers in this shape. */
+/** Every offset-paginated list endpoint on the platform answers in this shape. */
 export interface Page<T> {
   items: T[]
   total: number
   limit: number
   offset: number
+}
+
+/**
+ * community-service's cursor pagination — feeds and comment lists, where an
+ * offset would skip or repeat a row as new posts land between two pages.
+ */
+export interface CursorPage<T> {
+  items: T[]
+  next_cursor: string | null
+  has_more: boolean
 }
 
 /**
