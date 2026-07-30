@@ -174,14 +174,19 @@ export function useSetReactionMutation(postId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (args: { emoji: string; alreadyActive: boolean }) =>
-      args.alreadyActive ? clearReaction(postId) : setReaction(postId, args.emoji),
+      args.alreadyActive
+        ? clearReaction(postId)
+        : setReaction(postId, args.emoji),
     onSuccess: (summary) => {
       client.setQueryData(communityKeys.post(postId), (post: unknown) =>
         post && typeof post === "object"
           ? { ...post, reactions: summary.reactions }
           : post
       )
-      void client.invalidateQueries({ queryKey: communityKeys.all, exact: false })
+      void client.invalidateQueries({
+        queryKey: communityKeys.all,
+        exact: false,
+      })
     },
   })
 }

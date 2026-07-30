@@ -26,7 +26,9 @@ export interface ItemFilters {
   offset?: number
 }
 
-export async function getItems(filters: ItemFilters): Promise<Page<MarketItem>> {
+export async function getItems(
+  filters: ItemFilters
+): Promise<Page<MarketItem>> {
   const { data } = await http.get<Page<MarketItem>>(API.marketplace.items, {
     params: filters,
   })
@@ -91,7 +93,9 @@ export async function placeMarketOrder(
 }
 
 export async function cancelMarketOrder(id: string): Promise<MarketOrder> {
-  const { data } = await http.delete<MarketOrder>(API.marketplace.cancelOrder(id))
+  const { data } = await http.delete<MarketOrder>(
+    API.marketplace.cancelOrder(id)
+  )
   return data
 }
 

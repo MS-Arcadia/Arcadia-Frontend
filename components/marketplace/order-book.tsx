@@ -119,13 +119,13 @@ function BookColumn({
               >
                 <span
                   className={cn(
-                    "tabular font-medium",
+                    "font-medium tabular",
                     tone === "buy" ? "text-primary" : "text-destructive"
                   )}
                 >
                   {formatMoney(row.price)}
                 </span>
-                <span className="tabular text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground tabular">
                   {row.orders}
                 </span>
               </li>

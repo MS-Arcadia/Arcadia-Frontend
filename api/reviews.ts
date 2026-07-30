@@ -82,10 +82,9 @@ export async function reactToReview(
   id: string,
   reactionType: ReviewSentiment
 ): Promise<{ message: string }> {
-  const { data } = await http.post<{ message: string }>(
-    API.reviews.react(id),
-    { reaction_type: reactionType }
-  )
+  const { data } = await http.post<{ message: string }>(API.reviews.react(id), {
+    reaction_type: reactionType,
+  })
   return data
 }
 

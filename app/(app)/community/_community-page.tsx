@@ -4,7 +4,14 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useInfiniteQuery } from "@tanstack/react-query"
-import { ArrowLeft, Loader2, MessagesSquare, Plus, Search, X } from "lucide-react"
+import {
+  ArrowLeft,
+  Loader2,
+  MessagesSquare,
+  Plus,
+  Search,
+  X,
+} from "lucide-react"
 
 import { getExploreFeed, getGameFeed, searchPosts } from "@/api/community"
 import { PostCard } from "@/components/community/post-card"
@@ -132,14 +139,18 @@ export function CommunityPage() {
               type="button"
               aria-label="Clear search"
               onClick={() => setSearchInput("")}
-              className="absolute top-1/2 inset-e-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute inset-e-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="size-3.5" />
             </button>
           )}
         </div>
 
-        <Button size="sm" className="min-h-9 gap-1.5" onClick={() => setComposerOpen(true)}>
+        <Button
+          size="sm"
+          className="min-h-9 gap-1.5"
+          onClick={() => setComposerOpen(true)}
+        >
           <Plus className="size-3.5" />
           New post
         </Button>
@@ -202,7 +213,9 @@ export function CommunityPage() {
             aria-hidden
           />
           <p className="mt-4 text-sm font-medium">
-            {mode === "search" ? "No posts match that search" : "Nothing here yet"}
+            {mode === "search"
+              ? "No posts match that search"
+              : "Nothing here yet"}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "search"

@@ -58,8 +58,8 @@ export function MarketPage() {
         <div>
           <h1 className="text-xl font-semibold">Market</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            In-game items developers hand out, traded through an order book
-            that matches buyers and sellers automatically.
+            In-game items developers hand out, traded through an order book that
+            matches buyers and sellers automatically.
           </p>
         </div>
 
@@ -231,7 +231,7 @@ function OrdersTab() {
             )}
             {order.side === "BUY" ? "Buy" : "Sell"}
           </span>
-          <span className="tabular font-medium">
+          <span className="font-medium tabular">
             {formatMoney(order.price)}
           </span>
           <Badge className={cn("shrink-0", ORDER_STATUS_TONE[order.status])}>
@@ -308,7 +308,7 @@ function TradesTab() {
             >
               {bought ? "Bought" : "Sold"}
             </span>
-            <span className="tabular font-medium">
+            <span className="font-medium tabular">
               {formatMoney(trade.price)}
             </span>
             <span className="ms-auto text-xs text-muted-foreground">
@@ -371,7 +371,7 @@ function HoldingsTab() {
           <span className="min-w-0 flex-1 truncate font-medium">
             {itemsById.get(holding.item_id) ?? "Item"}
           </span>
-          <span className="tabular text-muted-foreground">
+          <span className="text-muted-foreground tabular">
             × {holding.quantity}
           </span>
         </li>

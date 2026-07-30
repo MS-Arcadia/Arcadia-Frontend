@@ -372,8 +372,7 @@ export interface FestivalSeed {
 export const SEED_FESTIVALS: FestivalSeed[] = [
   {
     name: "Midwinter Sale",
-    description:
-      "A week of platform-wide discounts to close out the season.",
+    description: "A week of platform-wide discounts to close out the season.",
     state: "ACTIVE",
     startInDays: -2,
     endInDays: 5,

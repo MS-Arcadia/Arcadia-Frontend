@@ -20,7 +20,12 @@ interface Props {
  *  gift's recipient, even someone who has since refunded. `COMPLETED`,
  *  `REFUNDED`, `PAYING` and `DEFAULTED` all mean ownership was granted at some
  *  point; `PENDING`/`RESERVED`/`FAILED`/`REFUNDING`/`CANCELLED` do not. */
-const EVER_OWNED_STATES = new Set(["COMPLETED", "REFUNDED", "PAYING", "DEFAULTED"])
+const EVER_OWNED_STATES = new Set([
+  "COMPLETED",
+  "REFUNDED",
+  "PAYING",
+  "DEFAULTED",
+])
 
 const SORTS: { value: ReviewSortBy; label: string }[] = [
   { value: "created_at", label: "Newest" },

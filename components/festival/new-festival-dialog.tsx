@@ -17,7 +17,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useCreateFestivalMutation } from "@/queries/festivals"
-import { newFestivalSchema, type NewFestivalForm } from "@/schemas/festival.schema"
+import {
+  newFestivalSchema,
+  type NewFestivalForm,
+} from "@/schemas/festival.schema"
 
 interface Props {
   open: boolean

@@ -48,7 +48,8 @@ export function PostComposer({ open, onOpenChange, defaultGameId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const gameOptions = games?.items ?? []
-  const canSubmit = Boolean(gameId) && (body.trim().length > 0 || files.length > 0)
+  const canSubmit =
+    Boolean(gameId) && (body.trim().length > 0 || files.length > 0)
 
   function reset() {
     setGameId(defaultGameId ?? "")
@@ -98,7 +99,10 @@ export function PostComposer({ open, onOpenChange, defaultGameId }: Props) {
             <Label htmlFor="composer-game" className="text-xs">
               Game
             </Label>
-            <Select value={gameId} onValueChange={(value) => setGameId(value ?? "")}>
+            <Select
+              value={gameId}
+              onValueChange={(value) => setGameId(value ?? "")}
+            >
               <SelectTrigger id="composer-game" className="w-full">
                 <SelectValue placeholder="Which game is this about?" />
               </SelectTrigger>
@@ -204,7 +208,7 @@ export function PostComposer({ open, onOpenChange, defaultGameId }: Props) {
                     onClick={() =>
                       setFiles((prev) => prev.filter((_, i) => i !== index))
                     }
-                    className="absolute top-0.5 inset-e-0.5 flex size-4 items-center justify-center rounded-full bg-background/80 text-foreground"
+                    className="absolute inset-e-0.5 top-0.5 flex size-4 items-center justify-center rounded-full bg-background/80 text-foreground"
                   >
                     <X className="size-3" />
                   </button>

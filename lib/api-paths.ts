@@ -126,7 +126,8 @@ export const API = {
     gameFeed: (gameId: string) => `/community/v1/games/${gameId}/feed`,
     exploreFeed: "/community/v1/feed/explore",
     search: "/community/v1/posts/search",
-    topPosts: (authorId: string) => `/community/v1/authors/${authorId}/top-posts`,
+    topPosts: (authorId: string) =>
+      `/community/v1/authors/${authorId}/top-posts`,
     createPost: "/community/v1/posts",
     createPostMultipart: "/community/v1/posts/multipart",
     post: (id: string) => `/community/v1/posts/${id}`,

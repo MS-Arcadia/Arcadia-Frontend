@@ -34,9 +34,9 @@ export default function ModerationPage() {
   // moment of lag — hiding the just-resolved card locally keeps the list from
   // flashing a report that is already dealt with.
   const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set())
-  const reports = (queue.data?.pages.flatMap((page) => page.items) ?? []).filter(
-    (report) => !resolvedIds.has(report.id)
-  )
+  const reports = (
+    queue.data?.pages.flatMap((page) => page.items) ?? []
+  ).filter((report) => !resolvedIds.has(report.id))
 
   if (!isStaff) {
     return (
@@ -48,8 +48,8 @@ export default function ModerationPage() {
         />
         <h1 className="mt-4 text-lg font-semibold">Support only</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Resolving a report decides whether it stays up. Only Support and
-          Admin can act on the queue.
+          Resolving a report decides whether it stays up. Only Support and Admin
+          can act on the queue.
         </p>
       </div>
     )
@@ -64,8 +64,7 @@ export default function ModerationPage() {
         <h1 className="text-xl font-semibold">Community moderation</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Open reports on posts and comments. Removing takes the content down;
-          dismissing leaves it as it was — either way, a note explains the
-          call.
+          dismissing leaves it as it was — either way, a note explains the call.
         </p>
       </div>
 
@@ -137,9 +136,7 @@ function ReportCard({
 
   const busy = resolve.isPending
   const targetHref =
-    report.target_type === "POST"
-      ? `/community/${report.target_id}`
-      : null
+    report.target_type === "POST" ? `/community/${report.target_id}` : null
 
   return (
     <article className="space-y-3 rounded-xl border border-border bg-card p-4">

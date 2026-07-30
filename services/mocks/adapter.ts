@@ -445,11 +445,9 @@ route("get", API.reviews.forGame(":id"), ({ params, query }) =>
     limit: query.get("limit") ? Number(query.get("limit")) : undefined,
     offset: query.get("offset") ? Number(query.get("offset")) : undefined,
     sort_by: (query.get("sort_by") ?? undefined) as
-      | "created_at"
-      | "like_count"
-      | "dislike_count"
-      | undefined,
-    sort_order: (query.get("sort_order") ?? undefined) as "asc" | "desc" | undefined,
+      "created_at" | "like_count" | "dislike_count" | undefined,
+    sort_order: (query.get("sort_order") ?? undefined) as
+      "asc" | "desc" | undefined,
   })
 )
 route("get", API.reviews.rating(":id"), ({ params }) =>
@@ -511,10 +509,8 @@ route("patch", API.festivals.reschedule(":id"), ({ params, body }) =>
 route("post", API.festivals.addGame(":id"), ({ params, body }) =>
   mock.addFestivalGame(params[0], str(body.game_id))
 )
-route(
-  "delete",
-  API.festivals.removeGame(":id", ":gameId"),
-  ({ params }) => mock.removeFestivalGame(params[0], params[1])
+route("delete", API.festivals.removeGame(":id", ":gameId"), ({ params }) =>
+  mock.removeFestivalGame(params[0], params[1])
 )
 route("post", API.festivals.start(":id"), ({ params }) =>
   mock.startFestival(params[0])
@@ -531,10 +527,7 @@ route("post", API.festivals.cancel(":id"), ({ params }) =>
 route("get", API.community.gameFeed(":id"), ({ params, query }) =>
   mock.gameFeed(params[0], {
     sort: (query.get("sort") ?? undefined) as
-      | "newest"
-      | "most_viewed"
-      | "most_reacted"
-      | undefined,
+      "newest" | "most_viewed" | "most_reacted" | undefined,
     cursor: query.get("cursor"),
     limit: query.get("limit") ? Number(query.get("limit")) : undefined,
   })
@@ -542,10 +535,7 @@ route("get", API.community.gameFeed(":id"), ({ params, query }) =>
 route("get", API.community.exploreFeed, ({ query }) =>
   mock.exploreFeed({
     sort: (query.get("sort") ?? undefined) as
-      | "newest"
-      | "most_viewed"
-      | "most_reacted"
-      | undefined,
+      "newest" | "most_viewed" | "most_reacted" | undefined,
     cursor: query.get("cursor"),
     limit: query.get("limit") ? Number(query.get("limit")) : undefined,
   })
@@ -691,7 +681,9 @@ const adapter: AxiosAdapter = async (config: InternalAxiosRequestConfig) => {
         body.tags = []
       }
     }
-    body.files = form.getAll("files").filter((entry): entry is File => entry instanceof File)
+    body.files = form
+      .getAll("files")
+      .filter((entry): entry is File => entry instanceof File)
   } else if (config.data && typeof config.data === "object") {
     body = config.data as Record<string, unknown>
   }

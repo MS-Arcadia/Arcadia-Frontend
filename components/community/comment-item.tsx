@@ -1,7 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { Check, Flag, Loader2, MoreVertical, Pencil, Trash2, X } from "lucide-react"
+import {
+  Check,
+  Flag,
+  Loader2,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  X,
+} from "lucide-react"
 
 import { AuthorChip } from "@/components/community/author-chip"
 import { ReportDialog } from "@/components/community/report-dialog"
@@ -47,13 +55,20 @@ export function CommentItem({ postId, comment }: Props) {
     <div className="flex gap-3 py-3">
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-          <AuthorChip authorId={comment.author_id} className="font-medium text-foreground" />
+          <AuthorChip
+            authorId={comment.author_id}
+            className="font-medium text-foreground"
+          />
           <span aria-hidden>·</span>
           <span>{formatRelative(comment.created_at)}</span>
-          {comment.edited_at && <span className="text-muted-foreground/70">(edited)</span>}
+          {comment.edited_at && (
+            <span className="text-muted-foreground/70">(edited)</span>
+          )}
           {removed && (
             <Badge variant="destructive" className="ms-1">
-              {comment.status === "REMOVED_BY_MODERATION" ? "Removed by Support" : "Deleted"}
+              {comment.status === "REMOVED_BY_MODERATION"
+                ? "Removed by Support"
+                : "Deleted"}
             </Badge>
           )}
         </div>
@@ -100,7 +115,7 @@ export function CommentItem({ postId, comment }: Props) {
             </div>
           </div>
         ) : (
-          <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
+          <p className="mt-1 text-sm whitespace-pre-wrap text-foreground">
             {comment.body}
           </p>
         )}

@@ -71,8 +71,8 @@ export function NewItemDialog({ open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>List an item</DialogTitle>
           <DialogDescription>
-            Users trade it through the order book once it is listed. The buy
-            and sell values are a reference price, not a fixed one.
+            Users trade it through the order book once it is listed. The buy and
+            sell values are a reference price, not a fixed one.
           </DialogDescription>
         </DialogHeader>
 

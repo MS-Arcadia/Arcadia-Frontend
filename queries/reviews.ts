@@ -96,7 +96,8 @@ export function useReportReviewMutation() {
       reportReview(args.reviewId, args.reason),
     onSuccess: () => {
       toast.success("Reported to Support", {
-        description: "They will look at it and remove it if it breaks the rules.",
+        description:
+          "They will look at it and remove it if it breaks the rules.",
       })
     },
   })

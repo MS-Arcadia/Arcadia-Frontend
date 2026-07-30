@@ -174,56 +174,61 @@ export function FestivalDetail({ id }: Props) {
         />
       )}
 
-      {isAdmin && (festival.state === "DRAFT" || festival.state === "ACTIVE") && (
-        <section className="space-y-2 rounded-xl border border-border bg-card p-4">
-          <h2 className="text-sm font-semibold">Lifecycle</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            {festival.state === "DRAFT" && (
+      {isAdmin &&
+        (festival.state === "DRAFT" || festival.state === "ACTIVE") && (
+          <section className="space-y-2 rounded-xl border border-border bg-card p-4">
+            <h2 className="text-sm font-semibold">Lifecycle</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              {festival.state === "DRAFT" && (
+                <Button
+                  className="min-h-9 gap-1.5"
+                  disabled={busy || festival.games.length === 0}
+                  onClick={() => start.mutate()}
+                >
+                  {start.isPending && (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  )}
+                  Start festival
+                </Button>
+              )}
+              {festival.state === "ACTIVE" && (
+                <Button
+                  className="min-h-9 gap-1.5"
+                  disabled={busy}
+                  onClick={() => end.mutate()}
+                >
+                  {end.isPending && (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  )}
+                  End festival
+                </Button>
+              )}
               <Button
-                className="min-h-9 gap-1.5"
-                disabled={busy || festival.games.length === 0}
-                onClick={() => start.mutate()}
-              >
-                {start.isPending && (
-                  <Loader2 className="size-3.5 animate-spin" />
-                )}
-                Start festival
-              </Button>
-            )}
-            {festival.state === "ACTIVE" && (
-              <Button
+                variant="destructive"
+                size="sm"
                 className="min-h-9 gap-1.5"
                 disabled={busy}
-                onClick={() => end.mutate()}
+                onClick={() => setCancelOpen(true)}
               >
-                {end.isPending && <Loader2 className="size-3.5 animate-spin" />}
-                End festival
+                <X className="size-3.5" />
+                Cancel festival
               </Button>
+            </div>
+            {festival.state === "DRAFT" && festival.games.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Add at least one game first.
+              </p>
             )}
-            <Button
-              variant="destructive"
-              size="sm"
-              className="min-h-9 gap-1.5"
-              disabled={busy}
-              onClick={() => setCancelOpen(true)}
-            >
-              <X className="size-3.5" />
-              Cancel festival
-            </Button>
-          </div>
-          {festival.state === "DRAFT" && festival.games.length === 0 && (
-            <p className="text-xs text-muted-foreground">
-              Add at least one game first.
-            </p>
-          )}
-        </section>
-      )}
+          </section>
+        )}
 
       <CancelFestivalDialog
         open={cancelOpen}
         onOpenChange={setCancelOpen}
         pending={cancel.isPending}
-        onConfirm={() => cancel.mutate(undefined, { onSuccess: () => setCancelOpen(false) })}
+        onConfirm={() =>
+          cancel.mutate(undefined, { onSuccess: () => setCancelOpen(false) })
+        }
       />
 
       <Separator />
@@ -395,7 +400,7 @@ function FestivalGameRow({
       {game.discounted_price && game.discount_bps !== null && (
         <div className="flex items-center gap-2 text-sm">
           {activePromotion?.list_price && (
-            <span className="text-muted-foreground line-through tabular">
+            <span className="text-muted-foreground tabular line-through">
               {formatMoney(activePromotion.list_price)}
             </span>
           )}
@@ -442,11 +447,7 @@ function FestivalGameRow({
   )
 }
 
-function PromotionStatus({
-  promotion,
-}: {
-  promotion: PromotionSnapshotView
-}) {
+function PromotionStatus({ promotion }: { promotion: PromotionSnapshotView }) {
   if (promotion.state === "PROPOSED") {
     return (
       <p className="flex items-center gap-1.5 text-xs text-warning">

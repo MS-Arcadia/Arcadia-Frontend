@@ -47,12 +47,15 @@ export function FestivalsPage() {
         <div>
           <h1 className="text-xl font-semibold">Festivals</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Platform-wide sales, running for a fixed window across every game
-            an admin adds to them.
+            Platform-wide sales, running for a fixed window across every game an
+            admin adds to them.
           </p>
         </div>
         {isAdmin && (
-          <Button className="min-h-11 gap-1.5" onClick={() => setCreateOpen(true)}>
+          <Button
+            className="min-h-11 gap-1.5"
+            onClick={() => setCreateOpen(true)}
+          >
             <Plus className="size-4" />
             New festival
           </Button>
@@ -96,12 +99,8 @@ export function FestivalsPage() {
       {active.length > 0 && (
         <FestivalSection title="Live now" festivals={active} />
       )}
-      {draft.length > 0 && (
-        <FestivalSection title="Drafts" festivals={draft} />
-      )}
-      {ended.length > 0 && (
-        <FestivalSection title="Ended" festivals={ended} />
-      )}
+      {draft.length > 0 && <FestivalSection title="Drafts" festivals={draft} />}
+      {ended.length > 0 && <FestivalSection title="Ended" festivals={ended} />}
       {cancelled.length > 0 && (
         <FestivalSection title="Cancelled" festivals={cancelled} />
       )}
@@ -129,8 +128,10 @@ function FestivalSection({
 }
 
 function FestivalCard({ festival }: { festival: FestivalView }) {
-  const endsIn = festival.state === "ACTIVE" ? timeUntil(festival.ends_at) : null
-  const startsIn = festival.state === "DRAFT" ? timeUntil(festival.starts_at) : null
+  const endsIn =
+    festival.state === "ACTIVE" ? timeUntil(festival.ends_at) : null
+  const startsIn =
+    festival.state === "DRAFT" ? timeUntil(festival.starts_at) : null
 
   return (
     <Link

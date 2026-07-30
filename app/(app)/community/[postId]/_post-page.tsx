@@ -84,7 +84,11 @@ export function PostPage({ postId }: Props) {
         Community
       </Button>
 
-      <PostCard post={post} detail onDeleted={() => router.push("/community")} />
+      <PostCard
+        post={post}
+        detail
+        onDeleted={() => router.push("/community")}
+      />
 
       <Separator />
 

@@ -1,7 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { Flag, Loader2, Pencil, ThumbsDown, ThumbsUp, Trash2, X } from "lucide-react"
+import {
+  Flag,
+  Loader2,
+  Pencil,
+  ThumbsDown,
+  ThumbsUp,
+  Trash2,
+  X,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -61,7 +69,9 @@ export function ReviewCard({ review, gameId }: Props) {
               ) : (
                 <ThumbsDown className="size-3" />
               )}
-              {review.sentiment === "LIKE" ? "Recommends" : "Does not recommend"}
+              {review.sentiment === "LIKE"
+                ? "Recommends"
+                : "Does not recommend"}
             </span>
             <span className="font-mono text-xs text-muted-foreground/70">
               {review.author_id.slice(0, 8)}
@@ -84,7 +94,11 @@ export function ReviewCard({ review, gameId }: Props) {
                 setText(review.text)
               }}
             >
-              {editing ? <X className="size-3.5" /> : <Pencil className="size-3.5" />}
+              {editing ? (
+                <X className="size-3.5" />
+              ) : (
+                <Pencil className="size-3.5" />
+              )}
             </Button>
             <Button
               variant="ghost"
@@ -146,7 +160,9 @@ export function ReviewCard({ review, gameId }: Props) {
           </div>
         </div>
       ) : (
-        <p className="text-sm leading-relaxed whitespace-pre-wrap">{review.text}</p>
+        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+          {review.text}
+        </p>
       )}
 
       <div className="flex items-center gap-3 pt-1">
@@ -210,7 +226,9 @@ export function ReviewCard({ review, gameId }: Props) {
                 )
               }
             >
-              {report.isPending && <Loader2 className="size-3.5 animate-spin" />}
+              {report.isPending && (
+                <Loader2 className="size-3.5 animate-spin" />
+              )}
               Report to Support
             </Button>
           </div>

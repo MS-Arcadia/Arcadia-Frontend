@@ -1507,7 +1507,10 @@ export function proposePromotion(
       "A discount is between 1 and 10000 bps"
     )
   }
-  if (festivalId && !db.festivals.some((festival) => festival.id === festivalId)) {
+  if (
+    festivalId &&
+    !db.festivals.some((festival) => festival.id === festivalId)
+  ) {
     throw new MockRuleError(404, "NOT_FOUND", "No such festival")
   }
   const promotion: Promotion = {
@@ -1721,7 +1724,12 @@ function holdingOf(userId: string, itemId: string): Holding | undefined {
 function adjustHolding(userId: string, itemId: string, delta: number): void {
   const existing = holdingOf(userId, itemId)
   if (existing) existing.quantity += delta
-  else db.marketHoldings.push({ user_id: userId, item_id: itemId, quantity: delta })
+  else
+    db.marketHoldings.push({
+      user_id: userId,
+      item_id: itemId,
+      quantity: delta,
+    })
 }
 
 export function marketItemsOf(filters: { game_id?: string }): MarketItem[] {
@@ -1756,7 +1764,11 @@ export function createMarketItem(input: {
     buyValue = BigInt(input.buy_value || "0")
     sellValue = BigInt(input.sell_value || "0")
   } catch {
-    throw new MockRuleError(400, "INVALID_AMOUNT", "Values must be whole numbers")
+    throw new MockRuleError(
+      400,
+      "INVALID_AMOUNT",
+      "Values must be whole numbers"
+    )
   }
   if (buyValue < 0n || sellValue < 0n) {
     throw new MockRuleError(400, "INVALID_VALUE", "A value cannot be negative")
@@ -1786,7 +1798,9 @@ export function distributeMarketItem(
   if (!Number.isInteger(count) || count < 1 || count > 500) {
     throw new MockRuleError(400, "INVALID_COUNT", "Between 1 and 500")
   }
-  const recipients = db.users.filter((candidate) => candidate.state === "ACTIVE")
+  const recipients = db.users.filter(
+    (candidate) => candidate.state === "ACTIVE"
+  )
   if (recipients.length === 0) {
     throw new MockRuleError(
       422,
@@ -1817,7 +1831,11 @@ export function placeMarketOrder(input: {
   try {
     price = BigInt(input.price || "0")
   } catch {
-    throw new MockRuleError(400, "INVALID_AMOUNT", "Price must be a whole number")
+    throw new MockRuleError(
+      400,
+      "INVALID_AMOUNT",
+      "Price must be a whole number"
+    )
   }
   if (price <= 0n) {
     throw new MockRuleError(400, "INVALID_PRICE", "A price must be positive")
@@ -2159,7 +2177,8 @@ export function reactToUserReview(
     save()
     return
   }
-  if (previous === "LIKE") review.like_count = Math.max(0, review.like_count - 1)
+  if (previous === "LIKE")
+    review.like_count = Math.max(0, review.like_count - 1)
   if (previous === "DISLIKE")
     review.dislike_count = Math.max(0, review.dislike_count - 1)
   if (reactionType === "LIKE") review.like_count += 1
@@ -2277,8 +2296,9 @@ function festivalGameView(
       promotion.festival_id === festival.id && promotion.state === "ACTIVE"
   )
   if (!active) return { ...game, discounted_price: null, discount_bps: null }
-  const listPrice = db.games.find((candidate) => candidate.id === game.game_id)
-    ?.final_price
+  const listPrice = db.games.find(
+    (candidate) => candidate.id === game.game_id
+  )?.final_price
   return {
     ...game,
     discounted_price: listPrice
@@ -2308,7 +2328,8 @@ function festivalPromotionSnapshots(
           list_price: listPrice,
           effective_price: listPrice
             ? money(
-                parse(listPrice) - share(parse(listPrice), promotion.discount_bps)
+                parse(listPrice) -
+                  share(parse(listPrice), promotion.discount_bps)
               )
             : null,
           updated_at: promotion.created_at ?? iso(),
@@ -2341,10 +2362,12 @@ function toFestivalDetail(festival: FestivalDetailView): FestivalDetailView {
   }
 }
 
-export function festivalsList(filters: {
-  limit?: number
-  offset?: number
-}): { items: FestivalView[]; total: number; limit: number; offset: number } {
+export function festivalsList(filters: { limit?: number; offset?: number }): {
+  items: FestivalView[]
+  total: number
+  limit: number
+  offset: number
+} {
   const limit = filters.limit ?? 20
   const offset = filters.offset ?? 0
   const views = db.festivals.map(toFestivalView)
@@ -2588,10 +2611,7 @@ function paginateCursor<T extends { id: string }>(
   limit: number
 ): { items: T[]; next_cursor: string | null; has_more: boolean } {
   const startIndex = cursor
-    ? Math.max(
-        0,
-        items.findIndex((item) => item.id === cursor) + 1
-      )
+    ? Math.max(0, items.findIndex((item) => item.id === cursor) + 1)
     : 0
   const page = items.slice(startIndex, startIndex + limit)
   const hasMore = startIndex + limit < items.length
@@ -2614,7 +2634,8 @@ function sortPosts(posts: Post[], sort: FeedSort): Post[] {
     sorted.sort((a, b) => sumReactions(b.reactions) - sumReactions(a.reactions))
   } else {
     sorted.sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )
   }
   return sorted
@@ -2741,14 +2762,23 @@ export function deleteCommunityPost(postId: string): void {
     throw new MockRuleError(403, "PERMISSION_DENIED", "That post is not yours")
   }
   post.status =
-    staff && post.author_id !== user.user_id ? "REMOVED_BY_MODERATION" : "DELETED"
+    staff && post.author_id !== user.user_id
+      ? "REMOVED_BY_MODERATION"
+      : "DELETED"
   save()
 }
 
-export function listComments(postId: string, cursor: string | null, limit: number) {
-  const list = commentsOf(postId).filter((comment) => comment.status === "ACTIVE")
+export function listComments(
+  postId: string,
+  cursor: string | null,
+  limit: number
+) {
+  const list = commentsOf(postId).filter(
+    (comment) => comment.status === "ACTIVE"
+  )
   const sorted = [...list].sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    (a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   )
   return paginateCursor(sorted, cursor, limit)
 }
@@ -2786,9 +2816,10 @@ export function addCommunityComment(postId: string, body: string): Comment {
   return comment
 }
 
-function findCommunityComment(
-  commentId: string
-): { postId: string; comment: Comment } {
+function findCommunityComment(commentId: string): {
+  postId: string
+  comment: Comment
+} {
   for (const [postId, comments] of Object.entries(db.comments)) {
     const comment = comments.find((candidate) => candidate.id === commentId)
     if (comment) return { postId, comment }
@@ -2800,7 +2831,11 @@ export function editCommunityComment(commentId: string, body: string): Comment {
   const user = currentUser()
   const { comment } = findCommunityComment(commentId)
   if (comment.author_id !== user.user_id) {
-    throw new MockRuleError(403, "PERMISSION_DENIED", "That comment is not yours")
+    throw new MockRuleError(
+      403,
+      "PERMISSION_DENIED",
+      "That comment is not yours"
+    )
   }
   const text = body.trim()
   if (!text || text.length > 1000) {
@@ -2821,7 +2856,11 @@ export function deleteCommunityComment(commentId: string): void {
   const { postId, comment } = findCommunityComment(commentId)
   const staff = user.role === "SUPPORT" || user.role === "ADMIN"
   if (comment.author_id !== user.user_id && !staff) {
-    throw new MockRuleError(403, "PERMISSION_DENIED", "That comment is not yours")
+    throw new MockRuleError(
+      403,
+      "PERMISSION_DENIED",
+      "That comment is not yours"
+    )
   }
   comment.status =
     staff && comment.author_id !== user.user_id
@@ -2849,7 +2888,11 @@ export function setPostReaction(postId: string, emoji: string) {
   const user = currentUser()
   const post = communityPostById(postId)
   if (!(REACTION_EMOJI as readonly string[]).includes(emoji)) {
-    throw new MockRuleError(422, "INVALID_ARGUMENT", "Not a recognised reaction")
+    throw new MockRuleError(
+      422,
+      "INVALID_ARGUMENT",
+      "Not a recognised reaction"
+    )
   }
   const perPost = db.postReactions[postId] ?? {}
   const previous = perPost[user.user_id]
@@ -2859,7 +2902,10 @@ export function setPostReaction(postId: string, emoji: string) {
     post.reactions[emoji] = Math.max(0, (post.reactions[emoji] ?? 0) - 1)
   } else {
     if (previous) {
-      post.reactions[previous] = Math.max(0, (post.reactions[previous] ?? 0) - 1)
+      post.reactions[previous] = Math.max(
+        0,
+        (post.reactions[previous] ?? 0) - 1
+      )
     }
     perPost[user.user_id] = emoji
     post.reactions[emoji] = (post.reactions[emoji] ?? 0) + 1
@@ -2957,18 +3003,26 @@ export function resolveCommunityReport(
   note: string
 ): Report {
   const user = requireRole("SUPPORT", "ADMIN")
-  const report = db.communityReports.find((candidate) => candidate.id === reportId)
+  const report = db.communityReports.find(
+    (candidate) => candidate.id === reportId
+  )
   if (!report) throw new MockRuleError(404, "NOT_FOUND", "No such report")
   if (report.status !== "OPEN") {
     throw new MockRuleError(409, "CONFLICT", "That report was already resolved")
   }
   if (!note.trim()) {
-    throw new MockRuleError(400, "VALIDATION_FAILED", "A resolution needs a note")
+    throw new MockRuleError(
+      400,
+      "VALIDATION_FAILED",
+      "A resolution needs a note"
+    )
   }
 
   if (action === "REMOVE") {
     if (report.target_type === "POST") {
-      const post = db.posts.find((candidate) => candidate.id === report.target_id)
+      const post = db.posts.find(
+        (candidate) => candidate.id === report.target_id
+      )
       if (post) post.status = "REMOVED_BY_MODERATION"
     } else {
       const { postId, comment } = findCommunityComment(report.target_id)
@@ -2978,7 +3032,8 @@ export function resolveCommunityReport(
     }
   }
 
-  report.status = action === "REMOVE" ? "RESOLVED_REMOVED" : "RESOLVED_DISMISSED"
+  report.status =
+    action === "REMOVE" ? "RESOLVED_REMOVED" : "RESOLVED_DISMISSED"
   report.resolved_by = user.user_id
   report.resolution_note = note.trim()
   report.resolved_at = iso()

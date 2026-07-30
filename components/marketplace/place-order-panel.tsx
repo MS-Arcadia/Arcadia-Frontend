@@ -82,9 +82,7 @@ export function PlaceOrderPanel({ itemId }: Props) {
                 disabled={place.isPending || !price}
                 onClick={() => submit("SELL")}
               >
-                {place.isPending && (
-                  <Loader2 className="size-4 animate-spin" />
-                )}
+                {place.isPending && <Loader2 className="size-4 animate-spin" />}
                 Place sell order
               </Button>
             </>

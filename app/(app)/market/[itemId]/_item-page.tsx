@@ -97,13 +97,13 @@ export function ItemPage({ itemId }: Props) {
             <div className="flex items-center gap-4 text-sm">
               <span className="text-muted-foreground">
                 Buy value{" "}
-                <span className="tabular font-medium text-foreground">
+                <span className="font-medium text-foreground tabular">
                   {formatMoney(item.buy_value)}
                 </span>
               </span>
               <span className="text-muted-foreground">
                 Sell value{" "}
-                <span className="tabular font-medium text-foreground">
+                <span className="font-medium text-foreground tabular">
                   {formatMoney(item.sell_value)}
                 </span>
               </span>

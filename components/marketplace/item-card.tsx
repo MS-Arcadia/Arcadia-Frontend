@@ -49,13 +49,13 @@ export function ItemCard({ item, priority = false }: Props) {
         <div className="mt-1 flex items-center justify-between gap-2 text-xs">
           <span className="flex items-center gap-1 text-muted-foreground">
             <ArrowDownToLine className="size-3.5 text-primary" />
-            <span className="tabular text-foreground">
+            <span className="text-foreground tabular">
               {formatMoney(item.buy_value)}
             </span>
           </span>
           <span className="flex items-center gap-1 text-muted-foreground">
             <ArrowUpFromLine className="size-3.5 text-muted-foreground" />
-            <span className="tabular text-foreground">
+            <span className="text-foreground tabular">
               {formatMoney(item.sell_value)}
             </span>
           </span>

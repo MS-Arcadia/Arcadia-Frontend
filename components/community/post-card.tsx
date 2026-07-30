@@ -86,13 +86,20 @@ export function PostCard({ post, detail = false, onDeleted }: Props) {
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-          <AuthorChip authorId={post.author_id} className="font-medium text-foreground" />
+          <AuthorChip
+            authorId={post.author_id}
+            className="font-medium text-foreground"
+          />
           <span aria-hidden>·</span>
           <span>{formatRelative(post.created_at)}</span>
-          {post.edited_at && <span className="text-muted-foreground/70">(edited)</span>}
+          {post.edited_at && (
+            <span className="text-muted-foreground/70">(edited)</span>
+          )}
           {removed && (
             <Badge variant="destructive" className="ms-1">
-              {post.status === "REMOVED_BY_MODERATION" ? "Removed by Support" : "Deleted"}
+              {post.status === "REMOVED_BY_MODERATION"
+                ? "Removed by Support"
+                : "Deleted"}
             </Badge>
           )}
         </div>
@@ -170,10 +177,14 @@ export function PostCard({ post, detail = false, onDeleted }: Props) {
             <p
               className={cn(
                 "whitespace-pre-wrap text-foreground",
-                detail ? "text-sm leading-relaxed" : "line-clamp-6 text-sm leading-relaxed"
+                detail
+                  ? "text-sm leading-relaxed"
+                  : "line-clamp-6 text-sm leading-relaxed"
               )}
             >
-              {post.body || <span className="text-muted-foreground">(no text)</span>}
+              {post.body || (
+                <span className="text-muted-foreground">(no text)</span>
+              )}
             </p>
           </>
         )}
@@ -222,7 +233,11 @@ export function PostCard({ post, detail = false, onDeleted }: Props) {
       </div>
 
       <div onClick={stop}>
-        <EditPostDialog post={post} open={editOpen} onOpenChange={setEditOpen} />
+        <EditPostDialog
+          post={post}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
         <ReportDialog
           open={reportOpen}
           onOpenChange={setReportOpen}
