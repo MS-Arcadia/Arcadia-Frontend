@@ -1,7 +1,8 @@
 # Arcadia Frontend — Agent Rules
 
-You are a **senior frontend engineer** working on the Arcadia storefront, the web client for a
-seven-service game distribution platform. Read this file in full before writing or editing any code.
+You are a **senior frontend engineer** working on the Arcadia storefront, the web client for an
+eleven-service game distribution platform, reached through a gateway. Read this file in full before
+writing or editing any code.
 
 > `AGENTS.md` in this repo also applies: this is **Next.js 16**, whose APIs differ from most training
 > data. `params` and `searchParams` are promises, `middleware` is now `proxy`, and Turbopack is the
@@ -79,17 +80,32 @@ providers/            React context providers
 
 ## The backend, and how this app talks to it
 
-Seven services on seven ports, with **no gateway yet**. Every path is written service-prefixed
-against one base URL in `lib/api-paths.ts` — `/catalog/v1/games`, `/orders/v1/orders`, and so on.
-Two environment variables decide what answers:
+Eleven services behind `api-gateway`, on `:8090` locally. Every path is written service-prefixed
+against one base URL in `lib/api-paths.ts` — `/catalog/v1/games`, `/orders/v1/orders`, and so on —
+and those prefixes are literally the gateway's own routing table (`api-gateway/internal/gateway/routes.go`),
+so a path that is wrong here is wrong there too. Two environment variables decide what answers:
 
 ```
 NEXT_PUBLIC_API_MODE=mock   # services/mocks answers, via a real axios adapter
-NEXT_PUBLIC_API_MODE=live   # the gateway at NEXT_PUBLIC_API_URL answers
+NEXT_PUBLIC_API_MODE=live   # the gateway at NEXT_PUBLIC_API_URL answers (default local: http://localhost:8090)
 ```
 
-**Never add a second base URL or a per-service axios instance.** When the gateway lands, the switch
-is one variable, and those prefixes are the gateway's own routing table.
+**Never add a second base URL or a per-service axios instance.** `infra`'s `make images` now builds
+this service's image with `API_MODE=live` by default, since the gateway exists; `make docker` in
+this repository (no args) still builds the old self-contained `mock` image, useful for a demo with
+no backend running. `pnpm dev` reads `.env.local`, which is not committed — set it to `live` plus the
+gateway's address to develop against the real platform, or leave it `mock` to work with no backend
+at all.
+
+Only five of the eleven services are wired up here so far — `auth`, `catalog`, `orders`, `wallet`,
+`notifications` in `lib/api-paths.ts`, with a matching mock route in `services/mocks/adapter.ts` for
+each. `media-service`, `marketplace-service`, `review-service`, `festival-service` and
+`community-service` have no paths, `api/` functions, `queries/` hooks, `types/`, or mock routes yet —
+there is no UI for uploading media directly, browsing the item market, posting a review, or the
+community forum. Building one of those screens starts the same way any existing one did: add the
+path to `lib/api-paths.ts`, the function to `api/`, the hook to `queries/`, the wire types to
+`types/`, and a route to `services/mocks/adapter.ts` — read the owning service's own README for its
+exact request/response shape before writing the type, per the rule below.
 
 ### The mock layer is a real adapter, not a fixture folder
 

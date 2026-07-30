@@ -3,7 +3,7 @@ import type { AccessTokenClaims } from "@/types/auth.api.type"
 /**
  * Read the subject out of an access token.
  *
- * **Decoded, never verified.** All seven services check the signature themselves;
+ * **Decoded, never verified.** Every service checks the signature itself;
  * doing it here would need the shared secret in a browser bundle, which would hand
  * it to anybody who opened the network tab. The only thing this is used for is
  * knowing which profile to fetch and which links to show, and a tampered token

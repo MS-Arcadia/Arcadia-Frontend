@@ -1,10 +1,11 @@
 /**
- * Every path this app calls, written as the gateway will expose them.
+ * Every path this app calls, written exactly as api-gateway exposes them.
  *
- * The platform is seven services on seven ports and there is no gateway yet.
- * Rather than hard-code seven base URLs and rewrite every call site when the
- * gateway lands, all paths here are prefixed by service — `/catalog`, `/orders`,
- * `/wallet`, `/auth`, `/notifications` — against a single base URL.
+ * The platform is eleven services behind one gateway. Rather than hard-code eleven
+ * base URLs and a per-service axios instance, all paths here are prefixed by
+ * service — `/catalog`, `/orders`, `/wallet`, `/auth`, `/notifications`, and so on —
+ * against a single base URL, matching `api-gateway/internal/gateway/routes.go`'s
+ * routing table exactly.
  *
  *   NEXT_PUBLIC_API_MODE=mock     → the adapter in services/mocks answers
  *   NEXT_PUBLIC_API_MODE=live     → the gateway at NEXT_PUBLIC_API_URL answers
