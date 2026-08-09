@@ -1,7 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { LogOut, ShieldCheck, Sparkles, UserRound } from "lucide-react"
+import {
+  ClipboardList,
+  LogOut,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+} from "lucide-react"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -73,6 +79,11 @@ export function AccountMenu() {
 
         <DropdownMenuSeparator />
 
+        <DropdownMenuItem render={<Link href="/profile" />}>
+          <UserRound className="size-4" />
+          Profile
+        </DropdownMenuItem>
+
         {user.role === "DEVELOPER" && (
           <DropdownMenuItem render={<Link href="/developer" />}>
             <Sparkles className="size-4" />
@@ -89,7 +100,7 @@ export function AccountMenu() {
 
         {user.role === "ADMIN" && (
           <DropdownMenuItem render={<Link href="/admin" />}>
-            <UserRound className="size-4" />
+            <ClipboardList className="size-4" />
             Accounts
           </DropdownMenuItem>
         )}

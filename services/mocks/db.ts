@@ -41,7 +41,7 @@ import type {
   Notification,
   NotificationKind,
 } from "@/types/notification.api.type"
-import type { UserSummary } from "@/types/auth.api.type"
+import type { PublicProfile, UserSummary } from "@/types/auth.api.type"
 import type {
   BookDepth,
   BookView,
@@ -158,6 +158,8 @@ interface Store {
   sessionUserId: string | null
   games: Game[]
   ownerships: Ownership[]
+  /** Games a player has hidden from their public profile shelf. */
+  hiddenGames: Record<string, string[]>
   orders: Order[]
   plans: InstalmentPlan[]
   wallets: Record<string, Wallet>
@@ -482,11 +484,26 @@ function initialStore(): Store {
   const { festivals, promotions: festivalPromotions } = buildFestivals(games)
   const { posts, comments } = buildPosts(games)
 
+  // A couple of owned games so the player's public profile is not an empty shelf
+  // on first open — same reason market holdings start with one item.
+  const published = games.filter((game) => game.state === "PUBLISHED")
+  const seedOwnerships: Ownership[] = published.slice(0, 2).map((game) => ({
+    id: id("own"),
+    game_id: game.id,
+    owner_id: PLAYER_ID,
+    order_id: id("ord"),
+    status: "ACTIVE",
+    granted_at: iso(-60 * 24 * 5),
+    revoked_at: null,
+    gifted_by: "",
+  }))
+
   return {
     users,
     sessionUserId: null,
     games,
-    ownerships: [],
+    ownerships: seedOwnerships,
+    hiddenGames: {},
     orders: [],
     plans: [],
     wallets,
@@ -533,7 +550,7 @@ function initialStore(): Store {
 // Bumped for marketplace/reviews/festivals/community: an old snapshot has none
 // of those keys, and the alternative to a version bump is every new function
 // below defending against a store that predates it.
-const SNAPSHOT_VERSION = 2
+const SNAPSHOT_VERSION = 3
 
 interface Snapshot {
   version: number
@@ -670,6 +687,92 @@ export function userById(userId: string): UserSummary {
   const user = db.users.find((candidate) => candidate.user_id === userId)
   if (!user) throw new MockRuleError(404, "NOT_FOUND", "No such account")
   return publicUser(user)
+}
+
+/**
+ * The auth-profile shelf: what `GET /v1/profile/{id}` returns live.
+ *
+ * Identity fields are included so `useMeQuery` can hydrate the session in mock
+ * mode — live JWTs carry `role` instead.
+ */
+export function publicProfile(userId: string): PublicProfile {
+  const user = db.users.find((candidate) => candidate.user_id === userId)
+  if (!user) throw new MockRuleError(404, "NOT_FOUND", "No such account")
+
+  const hidden = new Set(db.hiddenGames[userId] ?? [])
+  const ownedGames = db.ownerships
+    .filter((entry) => entry.owner_id === userId && entry.status === "ACTIVE")
+    .map((entry) => ({
+      game_id: entry.game_id,
+      hidden: hidden.has(entry.game_id),
+    }))
+    // Public readers only see the visible shelf — same as the live service.
+    .filter((entry) => !entry.hidden)
+
+  const ownedItems = db.marketHoldings
+    .filter((holding) => holding.user_id === userId && holding.quantity > 0)
+    .map((holding) => {
+      const item = db.marketItems.find(
+        (candidate) => candidate.id === holding.item_id
+      )
+      return {
+        item_id: holding.item_id,
+        game_id: item?.game_id ?? "",
+      }
+    })
+
+  const topPosts = [...db.posts]
+    .filter((post) => post.author_id === userId && post.status === "ACTIVE")
+    .sort((a, b) => b.feedback_score - a.feedback_score)
+    .slice(0, 5)
+    .map((post, index) => ({
+      post_id: post.id,
+      feedback_score: post.feedback_score,
+      rank: index + 1,
+    }))
+
+  return {
+    user_id: user.user_id,
+    display_name: user.display_name,
+    avatar_url: "",
+    online: db.sessionUserId === userId,
+    owned_games: ownedGames,
+    owned_items: ownedItems,
+    top_posts: topPosts,
+    email: user.email,
+    role: user.role,
+    state: user.state,
+  }
+}
+
+export function hideOwnedGame(gameId: string): void {
+  const user = currentUser()
+  if (!ownedGameIds(user.user_id).has(gameId)) {
+    throw new MockRuleError(
+      404,
+      "NOT_FOUND",
+      "That game is not in your library"
+    )
+  }
+  const list = new Set(db.hiddenGames[user.user_id] ?? [])
+  list.add(gameId)
+  db.hiddenGames[user.user_id] = [...list]
+  save()
+}
+
+export function unhideOwnedGame(gameId: string): void {
+  const user = currentUser()
+  const list = new Set(db.hiddenGames[user.user_id] ?? [])
+  list.delete(gameId)
+  db.hiddenGames[user.user_id] = [...list]
+  save()
+}
+
+export function topPostsByAuthor(authorId: string) {
+  return [...db.posts]
+    .filter((post) => post.author_id === authorId && post.status === "ACTIVE")
+    .sort((a, b) => b.feedback_score - a.feedback_score)
+    .slice(0, 5)
 }
 
 // --- wallet ----------------------------------------------------------------

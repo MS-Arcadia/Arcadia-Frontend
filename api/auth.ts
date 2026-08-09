@@ -2,6 +2,7 @@ import { API } from "@/lib/api-paths"
 import { http } from "@/services/http"
 import type {
   LoginBody,
+  PublicProfile,
   RegisterBody,
   RegisterResponse,
   TokenPair,
@@ -34,10 +35,23 @@ export async function logout(refreshToken: string): Promise<void> {
   await http.post(API.auth.logout, { refresh_token: refreshToken })
 }
 
-/** By id — the auth service has no "me" route, so the id comes from the token. */
-export async function getProfile(userId: string): Promise<UserSummary> {
-  const { data } = await http.get<UserSummary>(API.auth.profile(userId))
+/**
+ * The public profile shelf — display name, library, market holdings, top posts.
+ * The auth service has no "me" route; the id comes from the token's `sub`.
+ */
+export async function getProfile(userId: string): Promise<PublicProfile> {
+  const { data } = await http.get<PublicProfile>(API.auth.profile(userId))
   return data
+}
+
+/** Hide a owned game from the public shelf. Own profile only. */
+export async function hideGame(gameId: string): Promise<void> {
+  await http.post(API.auth.hideGame, { game_id: gameId })
+}
+
+/** Put a previously hidden game back on the public shelf. */
+export async function unhideGame(gameId: string): Promise<void> {
+  await http.post(API.auth.unhideGame, { game_id: gameId })
 }
 
 export async function requestRole(

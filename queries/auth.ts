@@ -20,8 +20,10 @@ import {
 } from "@/api/auth"
 import { ls } from "@/lib/local-storage"
 import { STORAGE_KEYS } from "@/lib/storage-keys"
+import { claimsOf } from "@/lib/token"
 import { useAuthStore } from "@/stores/auth.store"
 import type { Role } from "@/types/common.api.type"
+import type { UserSummary } from "@/types/auth.api.type"
 
 /**
  * The signed-in person.
@@ -29,17 +31,30 @@ import type { Role } from "@/types/common.api.type"
  * Read from the token's subject rather than from a `/me` endpoint, because the
  * auth service does not have one — a profile is fetched by id. `enabled` keeps it
  * from firing on the sign-in page, where there is no id yet.
+ *
+ * The profile shelf and the session identity are different shapes. Live JWTs
+ * carry `role`; the mock embeds identity fields on the profile response so a
+ * local session still knows who you are.
  */
 export function useMeQuery() {
   const userId = useAuthStore((state) => state.userId)
+  const accessToken = useAuthStore((state) => state.accessToken)
   const setUser = useAuthStore((state) => state.setUser)
 
   return useQuery({
     queryKey: authKeys.profile(userId ?? "anonymous"),
     queryFn: async () => {
       const profile = await getProfile(userId as string)
-      setUser(profile)
-      return profile
+      const claims = claimsOf(accessToken)
+      const user: UserSummary = {
+        user_id: profile.user_id,
+        display_name: profile.display_name,
+        email: profile.email ?? "",
+        role: claims?.role ?? profile.role ?? "BASIC_USER",
+        state: profile.state ?? "ACTIVE",
+      }
+      setUser(user)
+      return user
     },
     enabled: Boolean(userId),
     staleTime: 5 * 60 * 1000,

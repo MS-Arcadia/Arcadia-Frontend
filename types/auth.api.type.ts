@@ -43,6 +43,44 @@ export interface UserSummary {
   state: UserState
 }
 
+/** Transcribed from auth-profile-service `ProfileResponse`. */
+export interface OwnedGameRef {
+  game_id: string
+  hidden: boolean
+}
+
+export interface OwnedItemRef {
+  item_id: string
+  game_id: string
+}
+
+export interface TopPostRef {
+  post_id: string
+  feedback_score: number
+  rank: number
+}
+
+/**
+ * The public shelf at `GET /auth/v1/profile/{id}`.
+ *
+ * Identity fields (`email`, `role`, `state`) are not part of the live contract —
+ * the mock may include them so `useMeQuery` can hydrate the session without a
+ * separate `/me` route. Live mode takes `role` from the JWT and leaves email
+ * blank until a real identity endpoint exists.
+ */
+export interface PublicProfile {
+  user_id: string
+  display_name: string
+  avatar_url: string
+  online: boolean
+  owned_games: OwnedGameRef[]
+  owned_items: OwnedItemRef[]
+  top_posts: TopPostRef[]
+  email?: string
+  role?: Role
+  state?: UserState
+}
+
 /** The claims the platform's six services all verify. Decoded client-side for
  *  display only — every service checks the signature itself. */
 export interface AccessTokenClaims {

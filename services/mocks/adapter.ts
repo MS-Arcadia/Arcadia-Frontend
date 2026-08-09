@@ -90,7 +90,19 @@ route("post", API.auth.logout, () => {
   return {}
 })
 
-route("get", API.auth.profile(":id"), ({ params }) => mock.userById(params[0]))
+route("get", API.auth.profile(":id"), ({ params }) =>
+  mock.publicProfile(params[0])
+)
+
+route("post", API.auth.hideGame, ({ body }) => {
+  mock.hideOwnedGame(str(body.game_id))
+  return {}
+})
+
+route("post", API.auth.unhideGame, ({ body }) => {
+  mock.unhideOwnedGame(str(body.game_id))
+  return {}
+})
 
 route("post", API.auth.requestRole, ({ body }) =>
   mock.requestRole(str(body.requested_role, "DEVELOPER") as Role)
@@ -567,6 +579,9 @@ route("post", API.community.createPostMultipart, ({ body }) =>
 )
 route("get", API.community.post(":id"), ({ params }) =>
   mock.viewCommunityPost(params[0])
+)
+route("get", API.community.topPosts(":id"), ({ params }) =>
+  mock.topPostsByAuthor(params[0])
 )
 route("patch", API.community.editPost(":id"), ({ params, body }) =>
   mock.editCommunityPost(params[0], {

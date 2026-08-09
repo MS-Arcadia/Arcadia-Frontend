@@ -66,6 +66,12 @@ export async function getPost(id: string): Promise<Post> {
   return data
 }
 
+/** Profile's top-5 shelf — community is the source of truth for the full post. */
+export async function getTopPostsByAuthor(authorId: string): Promise<Post[]> {
+  const { data } = await http.get<Post[]>(API.community.topPosts(authorId))
+  return data
+}
+
 export interface CreatePostInput {
   game_id: string
   body?: string

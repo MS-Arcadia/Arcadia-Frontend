@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
 
 import { authKeys, getProfile } from "@/api/auth"
@@ -34,5 +35,16 @@ export function AuthorChip({ authorId, className }: Props) {
     ? (me?.display_name ?? "You")
     : (data?.display_name ?? `${authorId.slice(0, 10)}…`)
 
-  return <span className={cn("truncate", className)}>{label}</span>
+  return (
+    <Link
+      href={`/profile/${authorId}`}
+      onClick={(event) => event.stopPropagation()}
+      className={cn(
+        "truncate underline-offset-2 hover:text-primary hover:underline",
+        className
+      )}
+    >
+      {label}
+    </Link>
+  )
 }
