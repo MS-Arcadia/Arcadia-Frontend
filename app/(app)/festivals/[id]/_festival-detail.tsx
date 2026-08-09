@@ -472,7 +472,8 @@ function AddGameControl({
   festivalId: string
   games: FestivalGameView[]
 }) {
-  const { data, isPending } = useGamesQuery({ state: "PUBLISHED", limit: 200 })
+  // Catalog caps `limit` at 100 — anything higher is a 422.
+  const { data, isPending } = useGamesQuery({ state: "PUBLISHED", limit: 100 })
   const add = useAddFestivalGameMutation(festivalId)
   const [selected, setSelected] = useState<string | null>(null)
 

@@ -1,23 +1,17 @@
 import { z } from "zod"
 
-/** Limits taken from the catalog's own request models, so the form refuses what
- *  the service would refuse rather than inventing a stricter rule. */
+/** Limits taken from the catalog's own request models / domain
+ *  (`RegisterGameRequest`, `TITLE_MAX`, `DESCRIPTION_MAX`, `REQUIREMENTS_MAX`),
+ *  so the form refuses what the service would refuse rather than inventing a
+ *  stricter rule. */
 export const newGameSchema = z.object({
   title: z
     .string()
     .trim()
-    .min(2, "At least 2 characters")
-    .max(120, "At most 120 characters"),
-  description: z
-    .string()
-    .trim()
-    .min(20, "Say a little more — at least 20 characters")
-    .max(4000, "At most 4000 characters"),
-  minRequirements: z
-    .string()
-    .trim()
-    .min(3, "Say what it needs to run")
-    .max(500),
+    .min(1, "A title is required")
+    .max(200, "At most 200 characters"),
+  description: z.string().trim().max(10_000, "At most 10000 characters"),
+  minRequirements: z.string().trim().max(4_000, "At most 4000 characters"),
   genres: z.string().trim().min(2, "At least one genre"),
 })
 

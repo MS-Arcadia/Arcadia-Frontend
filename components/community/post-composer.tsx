@@ -37,7 +37,8 @@ interface Props {
 }
 
 export function PostComposer({ open, onOpenChange, defaultGameId }: Props) {
-  const { data: games } = useGamesQuery({ limit: 200 })
+  // Catalog caps `limit` at 100 — anything higher is a 422.
+  const { data: games } = useGamesQuery({ limit: 100 })
   const create = useCreatePostMutation()
 
   const [gameId, setGameId] = useState(defaultGameId ?? "")

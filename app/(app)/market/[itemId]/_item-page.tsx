@@ -140,7 +140,8 @@ function DistributeSection({
   const distribute = useDistributeItemMutation()
   const [count, setCount] = useState("10")
   const parsed = Number.parseInt(count, 10)
-  const valid = Number.isFinite(parsed) && parsed > 0
+  // Marketplace refuses anything outside 1..500 (`maxDistribution`).
+  const valid = Number.isFinite(parsed) && parsed >= 1 && parsed <= 500
 
   return (
     <section className="space-y-3 rounded-xl border border-border bg-card p-5">
