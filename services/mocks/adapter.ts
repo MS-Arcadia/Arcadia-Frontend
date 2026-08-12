@@ -6,6 +6,7 @@ import type {
 } from "axios"
 
 import { API } from "@/lib/api-paths"
+import type { Game } from "@/types/catalog.api.type"
 import type { Page, ProblemDocument, Role } from "@/types/common.api.type"
 
 import * as mock from "./db"
@@ -636,6 +637,87 @@ route("post", API.community.resolveReport(":id"), ({ params, body }) =>
     str(body.note)
   )
 )
+
+// --- recommendations (requirements §3.1) ------------------------------------
+//
+// The real service learns from purchase/review/game events over five minutes of
+// batch runs; nothing here reproduces that. This is honestly a FALLBACK, same as
+// the service's own answer when it has no signal yet for a user — "popular right
+// now" rather than a lie about personalisation.
+
+function publishedGames(): Game[] {
+  return db.games.filter(
+    (game) =>
+      (game.state === "PUBLISHED" || game.state === "PREORDER") &&
+      !game.withdrawn_at
+  )
+}
+
+function toRecommendationItem(game: Game, rank: number, reasons: string[]) {
+  return {
+    game_id: game.id,
+    title: game.title,
+    genres: game.genres,
+    score: Math.max(0, 1 - rank * 0.05),
+    source: "FALLBACK" as const,
+    rank,
+    reasons,
+  }
+}
+
+route("get", API.recommendations.mine, ({ query }) => {
+  const user = mock.currentUser()
+  const limit = query.get("limit") ? Number(query.get("limit")) : 10
+  const items = publishedGames()
+    .slice(0, limit)
+    .map((game, i) => toRecommendationItem(game, i, ["Popular right now"]))
+  return {
+    user_id: user.user_id,
+    source: "FALLBACK",
+    generated_at: new Date().toISOString(),
+    items,
+  }
+})
+
+route("get", API.recommendations.forUser(":id"), ({ params, query }) => {
+  const actor = mock.currentUser()
+  const targetId = params[0]
+  if (targetId !== actor.user_id) mock.requireRole("SUPPORT", "ADMIN")
+  const limit = query.get("limit") ? Number(query.get("limit")) : 10
+  const items = publishedGames()
+    .slice(0, limit)
+    .map((game, i) => toRecommendationItem(game, i, ["Popular right now"]))
+  return {
+    user_id: targetId,
+    source: "FALLBACK",
+    generated_at: new Date().toISOString(),
+    items,
+  }
+})
+
+route("get", API.recommendations.similar(":id"), ({ params, query }) => {
+  const game = mock.gameById(params[0])
+  const limit = query.get("limit") ? Number(query.get("limit")) : 6
+  const items = publishedGames()
+    .filter(
+      (g) =>
+        g.id !== game.id &&
+        g.genres.some((genre) => game.genres.includes(genre))
+    )
+    .slice(0, limit)
+    .map((g) => ({
+      game_id: g.id,
+      title: g.title,
+      genres: g.genres,
+      similarity:
+        g.genres.filter((genre) => game.genres.includes(genre)).length /
+        Math.max(g.genres.length, 1),
+      shared_features: g.genres
+        .filter((genre) => game.genres.includes(genre))
+        .map((genre) => `genre:${genre}`),
+    }))
+  return { game_id: game.id, items }
+})
 
 // --- the adapter itself ----------------------------------------------------
 

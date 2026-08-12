@@ -7,6 +7,7 @@ import { ArrowLeft, CalendarClock, MessagesSquare, Monitor } from "lucide-react"
 
 import { AcquirePanel } from "@/components/game/acquire-panel"
 import { PriceTag } from "@/components/game/price-tag"
+import { SimilarGamesRail } from "@/components/game/similar-games-rail"
 import { GameReviews } from "@/components/review/game-reviews"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -175,6 +176,10 @@ export function GamePage({ id }: Props) {
           />
         </div>
       </div>
+
+      <Separator />
+
+      <SimilarGamesRail gameId={game.id} />
 
       <Separator />
 

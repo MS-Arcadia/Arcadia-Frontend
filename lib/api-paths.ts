@@ -146,4 +146,13 @@ export const API = {
     resolveReport: (reportId: string) =>
       `/community/v1/moderation/reports/${reportId}/resolve`,
   },
+  recommendations: {
+    /** The caller's own suggestions. */
+    mine: "/recommendations/v1/recommendations",
+    /** Another user's, for Support and for the caller themselves. */
+    forUser: (userId: string) =>
+      `/recommendations/v1/users/${userId}/recommendations`,
+    /** Public — no auth required, same as a catalog listing. */
+    similar: (gameId: string) => `/recommendations/v1/games/${gameId}/similar`,
+  },
 } as const

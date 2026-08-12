@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import { SlidersHorizontal, X } from "lucide-react"
 
 import { GameCard } from "@/components/game/game-card"
+import { RecommendedRail } from "@/components/game/recommended-rail"
 import { StoreHero } from "@/components/game/store-hero"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -60,6 +61,8 @@ export function StorePage() {
       {!filtered && featured && (
         <StoreHero game={featured} owned={owned.has(featured.id)} />
       )}
+
+      {!filtered && <RecommendedRail />}
 
       <section className="space-y-5">
         <div className="flex flex-wrap items-center gap-3">
