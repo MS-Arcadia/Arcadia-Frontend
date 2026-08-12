@@ -57,11 +57,28 @@ jobs:
             NEXT_PUBLIC_API_MODE=${{ vars.NEXT_PUBLIC_API_MODE || 'mock' }}
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL || '/api' }}
 
-# There is no deploy step, and that is deliberate rather than unfinished: this
-# platform has no server to deploy to. The reference project this is modelled on
-# copies a compose file over SSH and restarts the stack; adding that here means
-# three secrets (SSH_HOST, SSH_USER, DEPLOY_SSH_KEY) and somewhere to send them.
-#
+  deploy:
+    name: Deploy to arcadia
+    runs-on: ubuntu-latest
+    needs: [publish]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Configure kubectl credentials
+        run: |
+          mkdir -p ~/.kube
+          printf '%s' "${{ secrets.ARCADIA_KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      # `set image` wouldn't trigger a rollout here: the tag is always :latest, so
+      # the pod template's image string never changes. `rollout restart` forces new
+      # pods regardless, and imagePullPolicy: Always (the default for :latest) means
+      # they pull the image this workflow just pushed. The k8s Deployment is named
+      # `frontend`, not `arcadia-frontend` — see infra/deploy/k8s/23-frontend.yaml.
+      - name: Roll out frontend
+        run: |
+          kubectl -n arcadia rollout restart deployment/frontend
+          kubectl -n arcadia rollout status deployment/frontend --timeout=180s
+
 # `NEXT_PUBLIC_*` come from repository *variables* rather than secrets on purpose —
 # they are inlined into the client bundle, so anybody who opens the page can read
 # them. Storing a public value as a secret only makes it harder to see what the
