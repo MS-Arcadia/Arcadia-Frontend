@@ -20,6 +20,7 @@ import { useHasRole } from "@/stores/auth.store"
 import { formatRelative } from "@/lib/datetime"
 import { formatMoney } from "@/lib/money"
 import type { Game } from "@/types/catalog.api.type"
+import { gameArt } from "@/lib/game-art"
 
 /**
  * Requirement 1.3 from Support's side.
@@ -106,7 +107,7 @@ function ReviewCard({ game }: { game: Game }) {
     approve.isPending ||
     reject.isPending ||
     suggest.isPending
-  const art = game.media.find((item) => item.kind === "COVER") ?? game.media[0]
+  const art = gameArt(game.media)
   const decidable = game.state === "IN_REVIEW"
 
   return (

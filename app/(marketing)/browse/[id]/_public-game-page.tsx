@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatDate } from "@/lib/datetime"
 import { useGameQuery } from "@/queries/catalog"
+import { gameArt } from "@/lib/game-art"
 
 interface Props {
   id: string
@@ -61,9 +62,7 @@ export function PublicGamePage({ id }: Props) {
     )
   }
 
-  const cover =
-    game.media.find((item) => item.kind === "COVER")?.media_ref ??
-    game.media[0]?.media_ref
+  const cover = gameArt(game.media)?.media_ref
   const preorder = game.state === "PREORDER"
 
   return (

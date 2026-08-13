@@ -23,6 +23,7 @@ import type { Role } from "@/types/common.api.type"
 import type { Game } from "@/types/catalog.api.type"
 import type { Post } from "@/types/community.api.type"
 import type { MarketItem } from "@/types/marketplace.api.type"
+import { gameArt } from "@/lib/game-art"
 
 const ROLE_LABEL: Record<Role, string> = {
   BASIC_USER: "Player",
@@ -41,7 +42,7 @@ function initials(name: string): string {
 }
 
 function cover(game: Game): string | null {
-  const art = game.media.find((item) => item.kind === "COVER") ?? game.media[0]
+  const art = gameArt(game.media)
   return art?.media_ref ?? null
 }
 

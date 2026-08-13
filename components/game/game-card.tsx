@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { formatDate } from "@/lib/datetime"
 import { cn } from "@/lib/utils"
 import type { Game } from "@/types/catalog.api.type"
+import { gameArt } from "@/lib/game-art"
 
 interface Props {
   game: Game
@@ -19,7 +20,7 @@ interface Props {
 }
 
 function cover(game: Game): string | null {
-  const art = game.media.find((item) => item.kind === "COVER") ?? game.media[0]
+  const art = gameArt(game.media)
   return art?.media_ref ?? null
 }
 

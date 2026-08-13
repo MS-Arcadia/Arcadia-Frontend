@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { formatDate } from "@/lib/datetime"
 import { formatMoney, minorToMoney } from "@/lib/money"
 import type { Game } from "@/types/catalog.api.type"
+import { gameArt } from "@/lib/game-art"
 
 interface Props {
   game: Game
@@ -34,7 +35,7 @@ const INSTALMENT_COUNT = 4
  * the schedule.
  */
 export function StoreHero({ game, owned }: Props) {
-  const art = game.media.find((item) => item.kind === "COVER") ?? game.media[0]
+  const art = gameArt(game.media)
   const price = game.effective_price ?? game.final_price
   const preorder = game.state === "PREORDER"
 

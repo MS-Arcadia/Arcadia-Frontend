@@ -15,6 +15,7 @@ import {
 import { useLibraryQuery } from "@/queries/catalog"
 import { formatDate } from "@/lib/datetime"
 import { formatNumber } from "@/lib/money"
+import { gameArt } from "@/lib/game-art"
 
 export default function LibraryPage() {
   const { data, isPending } = useLibraryQuery()
@@ -65,8 +66,7 @@ export default function LibraryPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {entries.map(({ game, ownership }) => {
-          const art =
-            game.media.find((item) => item.kind === "COVER") ?? game.media[0]
+          const art = gameArt(game.media)
           return (
             <article
               key={ownership.id}

@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useGameQuery, useLibraryQuery } from "@/queries/catalog"
 import { formatDate } from "@/lib/datetime"
+import { gameArt } from "@/lib/game-art"
 
 interface Props {
   id: string
@@ -60,7 +61,7 @@ export function GamePage({ id }: Props) {
     )
   }
 
-  const art = game.media.find((item) => item.kind === "COVER") ?? game.media[0]
+  const art = gameArt(game.media)
   const owned = (library?.items ?? []).some(
     (entry) => entry.game.id === game.id
   )

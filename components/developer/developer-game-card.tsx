@@ -23,6 +23,7 @@ import {
 import { formatDate } from "@/lib/datetime"
 import { formatMoney } from "@/lib/money"
 import type { Game } from "@/types/catalog.api.type"
+import { gameArt } from "@/lib/game-art"
 
 interface Props {
   game: Game
@@ -41,7 +42,7 @@ const PLACEHOLDER_SIZE = 4_200_000_000
  * as a switch rather than a row of buttons.
  */
 export function DeveloperGameCard({ game }: Props) {
-  const art = game.media.find((item) => item.kind === "COVER") ?? game.media[0]
+  const art = gameArt(game.media)
 
   const addVersion = useAddVersionMutation()
   const submit = useSubmitGameMutation()

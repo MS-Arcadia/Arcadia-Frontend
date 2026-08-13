@@ -270,7 +270,7 @@ function buildGame(seed: GameSeed): Game {
             },
           ],
     media: [
-      { id: id("med"), kind: "COVER", media_ref: seed.cover, position: 0 },
+      { id: id("med"), kind: "TEASER", media_ref: seed.cover, position: 0 },
     ],
     created_at: iso(-60 * 24 * 60),
     updated_at: iso(-60 * 24 * 3),
@@ -1548,7 +1548,7 @@ export function registerGame(input: {
     media: [
       {
         id: id("med"),
-        kind: "COVER",
+        kind: "TEASER",
         media_ref: "/covers/paper-kingdoms.svg",
         position: 0,
       },

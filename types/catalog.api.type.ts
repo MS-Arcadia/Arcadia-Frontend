@@ -14,7 +14,15 @@ export type GameState =
   | "PREORDER"
   | "PUBLISHED"
 
-export type MediaKind = "SCREENSHOT" | "TRAILER" | "COVER" | "TEASER"
+/**
+ * Exactly what catalog-service's `MediaKind` holds — two values, not four.
+ *
+ * `SCREENSHOT`, `TRAILER` and `COVER` were invented here and no game can ever carry
+ * one, which made every `kind === "COVER"` lookup in the app dead code that silently
+ * fell through to "whatever image is first". `TEASER` is this platform's cover art:
+ * the service picks a game's art with `teaser_ref`, the first TEASER it holds.
+ */
+export type MediaKind = "TEASER" | "IMAGE"
 
 export interface GameMedia {
   id: string
