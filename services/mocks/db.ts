@@ -36,7 +36,12 @@ import type {
   OrderState,
   OrderType,
 } from "@/types/order.api.type"
-import type { LedgerEntry, Wallet } from "@/types/wallet.api.type"
+import type {
+  ChargeResult,
+  LedgerEntry,
+  RedeemGiftCardResult,
+  Wallet,
+} from "@/types/wallet.api.type"
 import type {
   Notification,
   NotificationKind,
@@ -193,6 +198,30 @@ interface Store {
   /** `(post_id, user_id) -> emoji` — the idempotency `PUT .../reactions` needs. */
   postReactions: Record<string, Record<string, string>>
   communityReports: Report[]
+
+  // --- wallet funding (requirement 1.5) ------------------------------------
+  /** Bank top-ups in flight, keyed by payment intent. A charge exists before
+   *  any money moves, which is the whole point of the two-step flow. */
+  charges: Record<string, MockCharge>
+  giftCards: MockGiftCard[]
+}
+
+/** A bank top-up between "user pressed the button" and "the bank confirmed". */
+export interface MockCharge {
+  user_id: string
+  amount: Money
+  settled: boolean
+}
+
+export interface MockGiftCard {
+  id: string
+  code: string
+  amount: Money
+  status: "ACTIVE" | "USED" | "REVOKED"
+  issued_by: string
+  issued_at: string
+  redeemed_by?: string
+  redeemed_at?: string
 }
 
 // --- seeding ---------------------------------------------------------------
@@ -537,6 +566,27 @@ function initialStore(): Store {
     comments,
     postReactions: {},
     communityReports: [],
+    charges: {},
+    // Two live cards so Support has something to show and a player has
+    // something to redeem without an issuing step first.
+    giftCards: [
+      {
+        id: "gc-seed-1",
+        code: "ARCA-DIA1-GIFT",
+        amount: minor(50_000),
+        status: "ACTIVE",
+        issued_by: SUPPORT_ID,
+        issued_at: iso(-3 * 24 * 60),
+      },
+      {
+        id: "gc-seed-2",
+        code: "PLAY-MORE-2026",
+        amount: minor(120_000),
+        status: "ACTIVE",
+        issued_by: SUPPORT_ID,
+        issued_at: iso(-24 * 60),
+      },
+    ],
   }
 }
 
@@ -791,10 +841,10 @@ function recordEntry(
   reason: string,
   referenceId: string,
   description: string
-): void {
+): LedgerEntry {
   const wallet = walletOf(userId)
   const ledger = db.ledgers[userId] ?? []
-  ledger.unshift({
+  const entry: LedgerEntry = {
     id: id("led"),
     sequence: ledger.length + 1,
     wallet_id: wallet.id,
@@ -805,8 +855,10 @@ function recordEntry(
     reference_id: referenceId,
     description,
     created_at: iso(),
-  })
+  }
+  ledger.unshift(entry)
   db.ledgers[userId] = ledger
+  return entry
 }
 
 export function debit(
@@ -834,17 +886,117 @@ export function credit(
   reason: string,
   referenceId: string,
   description: string
-): void {
+): LedgerEntry {
   const wallet = walletOf(userId)
   wallet.balance = money(parse(wallet.balance) + parse(amount))
   wallet.available = money(parse(wallet.balance) - parse(wallet.held))
   wallet.version += 1
   wallet.updated_at = iso()
-  recordEntry(userId, "CREDIT", amount, reason, referenceId, description)
+  return recordEntry(userId, "CREDIT", amount, reason, referenceId, description)
 }
 
-export function topUp(amount: Money): Wallet {
+/** The wallet service's own floor, so the mock refuses what the platform refuses. */
+const MINIMUM_CHARGE_MINOR = 1_000n
+
+/**
+ * Starts a bank top-up, exactly as the wallet service does: it records an intent
+ * and credits nothing.
+ *
+ * The old mock credited immediately and returned the new balance, which is not
+ * what any deployment does — the wallet is credited when the bank confirms. A
+ * mock that skips the bank is how a demo can show a working top-up while the
+ * real flow is broken, which is precisely what had happened.
+ */
+export function initiateCharge(amount: Money): ChargeResult {
   const user = currentUser()
+  if (parse(amount) < MINIMUM_CHARGE_MINOR) {
+    throw new MockRuleError(
+      400,
+      "AMOUNT_TOO_SMALL",
+      `The minimum top-up is ${MINIMUM_CHARGE_MINOR / 100n}`
+    )
+  }
+  const intentId = id("pi")
+  db.charges[intentId] = { user_id: user.user_id, amount, settled: false }
+  save()
+  return {
+    payment_intent_id: intentId,
+    // Stands in for the payment service's /mock-bank/pay page. Same contract:
+    // somewhere to send the browser that comes back when the user is done.
+    redirect_url: `/mock-bank/${intentId}`,
+    amount,
+    idempotent_replay: false,
+  }
+}
+
+/**
+ * What the bank's confirmation would trigger. In the real platform this is a
+ * Kafka event the user never sees; here the mock bank page calls it.
+ */
+export function settleCharge(intentId: string): Wallet {
+  const charge = db.charges[intentId]
+  if (!charge) {
+    throw new MockRuleError(404, "NOT_FOUND", "No such payment")
+  }
+  if (charge.settled) {
+    // Idempotent, like the real confirmation path: a redelivered event, or a
+    // reloaded page, must not credit twice.
+    return walletOf(charge.user_id)
+  }
+  charge.settled = true
+  credit(charge.user_id, charge.amount, "TOP_UP", intentId, "Wallet top-up")
+  save()
+  return walletOf(charge.user_id)
+}
+
+export function chargeById(intentId: string): MockCharge {
+  const charge = db.charges[intentId]
+  if (!charge) {
+    throw new MockRuleError(404, "NOT_FOUND", "No such payment")
+  }
+  return charge
+}
+
+export function redeemGiftCard(code: string): RedeemGiftCardResult {
+  const user = currentUser()
+  const card = db.giftCards.find(
+    (entry) => entry.code.toUpperCase() === code.trim().toUpperCase()
+  )
+  if (!card) {
+    throw new MockRuleError(404, "GIFT_CARD_NOT_FOUND", "No such gift card")
+  }
+  if (card.status === "USED") {
+    throw new MockRuleError(
+      409,
+      "GIFT_CARD_ALREADY_USED",
+      "That card has already been redeemed"
+    )
+  }
+  if (card.status === "REVOKED") {
+    throw new MockRuleError(409, "GIFT_CARD_REVOKED", "That card was revoked")
+  }
+  card.status = "USED"
+  card.redeemed_by = user.user_id
+  card.redeemed_at = new Date().toISOString()
+  const entry = credit(
+    user.user_id,
+    card.amount,
+    "GIFT_CARD",
+    card.id,
+    "Gift card redeemed"
+  )
+  save()
+  return {
+    credited: card.amount,
+    wallet: walletOf(user.user_id),
+    entry,
+    idempotent_replay: false,
+  }
+}
+
+/** Support issues a card; the code is shown once, as the service intends. */
+export function issueGiftCard(amount: Money): MockGiftCard {
+  requireRole("SUPPORT", "ADMIN")
   if (parse(amount) <= 0n) {
     throw new MockRuleError(
       400,
@@ -852,9 +1004,33 @@ export function topUp(amount: Money): Wallet {
       "The amount must be greater than zero"
     )
   }
-  credit(user.user_id, amount, "TOP_UP", id("pay"), "Wallet top-up")
+  const card: MockGiftCard = {
+    id: id("gc"),
+    code: giftCardCode(),
+    amount,
+    status: "ACTIVE",
+    issued_by: currentUser().user_id,
+    issued_at: new Date().toISOString(),
+  }
+  db.giftCards.unshift(card)
   save()
-  return walletOf(user.user_id)
+  return card
+}
+
+/** Support's list. Codes are included because Support is who hands them out. */
+export function listGiftCards(): MockGiftCard[] {
+  requireRole("SUPPORT", "ADMIN")
+  return db.giftCards
+}
+
+function giftCardCode(): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+  const block = () =>
+    Array.from(
+      { length: 4 },
+      () => alphabet[Math.floor(Math.random() * alphabet.length)]
+    ).join("")
+  return `${block()}-${block()}-${block()}`
 }
 
 // --- notifications ---------------------------------------------------------

@@ -1,15 +1,23 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowDownLeft, ArrowUpRight, Loader2, Lock, Plus } from "lucide-react"
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Gift,
+  Landmark,
+  Loader2,
+  Lock,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
+  useInitiateChargeMutation,
   useLedgerQuery,
-  useTopUpMutation,
+  useRedeemGiftCardMutation,
   useWalletQuery,
 } from "@/queries/wallet"
 import { formatDateTime } from "@/lib/datetime"
@@ -35,8 +43,10 @@ const REASON_LABEL: Record<string, string> = {
 export default function WalletPage() {
   const { data: wallet, isPending } = useWalletQuery()
   const { data: ledger } = useLedgerQuery()
-  const topUp = useTopUpMutation()
+  const charge = useInitiateChargeMutation()
+  const redeem = useRedeemGiftCardMutation()
   const [amount, setAmount] = useState("")
+  const [giftCode, setGiftCode] = useState("")
 
   const held = wallet && !isZero(wallet.held)
 
@@ -92,20 +102,62 @@ export default function WalletPage() {
               />
               <Button
                 className="min-h-11 shrink-0"
-                disabled={!amount || topUp.isPending}
+                disabled={!amount || charge.isPending}
                 onClick={() =>
-                  topUp.mutate(minorToMoney(BigInt(amount) * 100n), {
-                    onSuccess: () => setAmount(""),
-                  })
+                  charge.mutate(minorToMoney(BigInt(amount) * 100n))
                 }
               >
-                {topUp.isPending ? (
+                {charge.isPending ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
-                  <Plus className="size-4" />
+                  <Landmark className="size-4" />
                 )}
-                Top up
+                Continue to bank
               </Button>
+            </div>
+            {/* Said before the redirect rather than discovered after it: the
+                balance does not move until the bank confirms, and a user who
+                expects an instant top-up reads a stale balance as a bug. */}
+            <p className="text-xs text-muted-foreground">
+              You will authorise the payment at your bank. The balance updates
+              once they confirm it.
+            </p>
+
+            <div className="space-y-3 border-t border-border pt-5">
+              <Label htmlFor="giftcard" className="text-xs">
+                Redeem a gift card
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="giftcard"
+                  value={giftCode}
+                  onChange={(event) =>
+                    setGiftCode(event.target.value.toUpperCase())
+                  }
+                  placeholder="ARCA-DIA1-GIFT"
+                  className="min-h-11 font-mono tracking-wider"
+                />
+                <Button
+                  variant="outline"
+                  className="min-h-11 shrink-0"
+                  disabled={!giftCode.trim() || redeem.isPending}
+                  onClick={() =>
+                    redeem.mutate(giftCode, {
+                      onSuccess: () => setGiftCode(""),
+                    })
+                  }
+                >
+                  {redeem.isPending ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Gift className="size-4" />
+                  )}
+                  Redeem
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                A card credits straight away — no bank involved.
+              </p>
             </div>
           </div>
         </section>

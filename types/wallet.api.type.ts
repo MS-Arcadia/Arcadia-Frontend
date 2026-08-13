@@ -34,8 +34,32 @@ export interface LedgerEntry {
   created_at: string
 }
 
-export interface TopUpBody {
+/**
+ * What starting a bank top-up returns.
+ *
+ * Note what is *not* here: a balance. Initiating a charge moves no money — it
+ * only asks the Payment Adapter for a redirect URL. The wallet is credited when
+ * the bank confirms and `BankPaymentConfirmed` arrives over Kafka, which is why
+ * the balance after a top-up is whatever the next read says rather than
+ * something this response can promise.
+ */
+export interface ChargeResult {
+  payment_intent_id: string
+  /** Where to send the browser to authorise the payment. */
+  redirect_url: string
   amount: Money
-  /** The gateway the money comes from. The sandbox one is what runs locally. */
-  method?: string
+  expires_at?: string
+  /** True when the same Idempotency-Key returned an existing intent. */
+  idempotent_replay: boolean
+}
+
+/**
+ * Redeeming a gift card credits immediately and returns the wallet with it —
+ * unlike a bank charge, no third party has to confirm anything first.
+ */
+export interface RedeemGiftCardResult {
+  credited: Money
+  wallet: Wallet
+  entry: LedgerEntry
+  idempotent_replay: boolean
 }
