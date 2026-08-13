@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import {
+  ChevronDown,
   ClipboardList,
   LogOut,
   ShieldCheck,
@@ -48,86 +49,95 @@ export function AccountMenu() {
   if (!user) return null
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
-            aria-label={`${user.display_name}, account menu`}
-          >
-            <Avatar className="size-7">
-              <AvatarFallback className="bg-primary/15 text-[0.7rem] font-semibold text-primary">
-                {initials(user.display_name)}
-              </AvatarFallback>
-            </Avatar>
-          </Button>
-        }
-      />
+    <div className="flex items-center gap-0.5">
+      {/* Avatar – navigates to profile */}
+      <Link
+        href="/profile"
+        aria-label={`${user.display_name}, profile`}
+        className="rounded-full transition-colors hover:bg-muted"
+      >
+        <Avatar className="size-7">
+          <AvatarFallback className="bg-primary/15 text-[0.7rem] font-semibold text-primary">
+            {initials(user.display_name)}
+          </AvatarFallback>
+        </Avatar>
+      </Link>
 
-      <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel className="space-y-1">
-          <p className="text-sm font-medium">{user.display_name}</p>
-          <p className="text-xs font-normal text-muted-foreground">
-            {user.email}
-          </p>
-          <Badge className="mt-1 border-primary/25 bg-primary/15 text-primary">
-            {ROLE_LABEL[user.role]}
-          </Badge>
-        </DropdownMenuLabel>
+      {/* Dropdown trigger – opens the menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-full text-muted-foreground hover:text-foreground"
+              aria-label="Account menu"
+            >
+              <ChevronDown className="size-3.5" />
+            </Button>
+          }
+        />
 
-        <DropdownMenuSeparator />
+        <DropdownMenuContent align="end" className="w-60">
+          <DropdownMenuLabel className="space-y-1">
+            <p className="text-sm font-medium">{user.display_name}</p>
+            <p className="text-xs font-normal text-muted-foreground">
+              {user.email}
+            </p>
+            <Badge className="mt-1 border-primary/25 bg-primary/15 text-primary">
+              {ROLE_LABEL[user.role]}
+            </Badge>
+          </DropdownMenuLabel>
 
-        <DropdownMenuItem render={<Link href="/profile" />}>
-          <UserRound className="size-4" />
-          Profile
-        </DropdownMenuItem>
+          <DropdownMenuSeparator />
 
-        {user.role === "DEVELOPER" && (
-          <DropdownMenuItem render={<Link href="/developer" />}>
-            <Sparkles className="size-4" />
-            My games
+          <DropdownMenuItem render={<Link href="/profile" />}>
+            <UserRound className="size-4" />
+            Profile
           </DropdownMenuItem>
-        )}
 
-        {(user.role === "SUPPORT" || user.role === "ADMIN") && (
-          <DropdownMenuItem render={<Link href="/review" />}>
-            <ShieldCheck className="size-4" />
-            Review queue
-          </DropdownMenuItem>
-        )}
+          {user.role === "DEVELOPER" && (
+            <DropdownMenuItem render={<Link href="/developer" />}>
+              <Sparkles className="size-4" />
+              My games
+            </DropdownMenuItem>
+          )}
 
-        {user.role === "ADMIN" && (
-          <DropdownMenuItem render={<Link href="/admin" />}>
-            <ClipboardList className="size-4" />
-            Accounts
-          </DropdownMenuItem>
-        )}
+          {(user.role === "SUPPORT" || user.role === "ADMIN") && (
+            <DropdownMenuItem render={<Link href="/review" />}>
+              <ShieldCheck className="size-4" />
+              Review queue
+            </DropdownMenuItem>
+          )}
 
-        {/* Requirement 1.1's other half: a player asks to become a developer, and
-            an administrator decides. Only offered to somebody who could be
-            promoted — staff asking to be a developer is not a thing. */}
-        {user.role === "BASIC_USER" && (
+          {user.role === "ADMIN" && (
+            <DropdownMenuItem render={<Link href="/admin" />}>
+              <ClipboardList className="size-4" />
+              Accounts
+            </DropdownMenuItem>
+          )}
+
+          {user.role === "BASIC_USER" && (
+            <DropdownMenuItem
+              onClick={() => requestRole.mutate("DEVELOPER")}
+              disabled={requestRole.isPending}
+            >
+              <Sparkles className="size-4" />
+              Ask to become a developer
+            </DropdownMenuItem>
+          )}
+
+          <DropdownMenuSeparator />
+
           <DropdownMenuItem
-            onClick={() => requestRole.mutate("DEVELOPER")}
-            disabled={requestRole.isPending}
+            onClick={() => signOut.mutate()}
+            disabled={signOut.isPending}
           >
-            <Sparkles className="size-4" />
-            Ask to become a developer
+            <LogOut className="size-4" />
+            Sign out
           </DropdownMenuItem>
-        )}
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem
-          onClick={() => signOut.mutate()}
-          disabled={signOut.isPending}
-        >
-          <LogOut className="size-4" />
-          Sign out
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
 }

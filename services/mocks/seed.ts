@@ -64,7 +64,7 @@ export const SEED_USERS: SeedUser[] = [
   },
   {
     user_id: ADMIN_ID,
-    email: "admin@arcadia.local",
+    email: "admin@arcadia.com",
     display_name: "Platform Admin",
     role: "ADMIN",
     state: "ACTIVE",
