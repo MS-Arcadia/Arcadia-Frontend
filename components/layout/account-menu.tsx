@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import Link from "next/link";
+import Link from "next/link"
 import {
   ChevronDown,
   ClipboardList,
@@ -8,11 +8,11 @@ import {
   ShieldCheck,
   Sparkles,
   UserRound,
-} from "lucide-react";
+} from "lucide-react"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,17 +21,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useLogoutMutation, useRequestRoleMutation } from "@/queries/auth";
-import { useAuthStore } from "@/stores/auth.store";
-import type { Role } from "@/types/common.api.type";
+} from "@/components/ui/dropdown-menu"
+import { useLogoutMutation, useRequestRoleMutation } from "@/queries/auth"
+import { useAuthStore } from "@/stores/auth.store"
+import type { Role } from "@/types/common.api.type"
 
 const ROLE_LABEL: Record<Role, string> = {
   BASIC_USER: "Player",
   DEVELOPER: "Developer",
   SUPPORT: "Support",
   ADMIN: "Administrator",
-};
+}
 
 function initials(name: string): string {
   return name
@@ -39,15 +39,15 @@ function initials(name: string): string {
     .slice(0, 2)
     .map((part) => part.at(0) ?? "")
     .join("")
-    .toUpperCase();
+    .toUpperCase()
 }
 
 export function AccountMenu() {
-  const user = useAuthStore((state) => state.user);
-  const signOut = useLogoutMutation();
-  const requestRole = useRequestRoleMutation();
+  const user = useAuthStore((state) => state.user)
+  const signOut = useLogoutMutation()
+  const requestRole = useRequestRoleMutation()
 
-  if (!user) return null;
+  if (!user) return null
 
   return (
     <div className="flex items-center gap-0.5">
@@ -159,5 +159,5 @@ export function AccountMenu() {
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  );
+  )
 }

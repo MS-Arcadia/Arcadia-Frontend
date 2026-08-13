@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   Check,
@@ -7,18 +7,18 @@ import {
   ShieldCheck,
   UserRound,
   X,
-} from "lucide-react";
+} from "lucide-react"
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 import {
   useBanMutation,
   useDecideRegistrationMutation,
@@ -26,37 +26,38 @@ import {
   useDirectoryQuery,
   useGrantRoleMutation,
   usePendingRoleRequestsQuery,
-} from "@/queries/auth";
-import { useAuthStore, useHasRole } from "@/stores/auth.store";
-import { formatRelative } from "@/lib/datetime";
-import { cn } from "@/lib/utils";
-import type { UserState, UserSummary } from "@/types/auth.api.type";
-import type { Role } from "@/types/common.api.type";
+} from "@/queries/auth"
+import { useAuthStore, useHasRole } from "@/stores/auth.store"
+import { formatRelative } from "@/lib/datetime"
+import { cn } from "@/lib/utils"
+import type { UserState, UserSummary } from "@/types/auth.api.type"
+import type { Role } from "@/types/common.api.type"
 
-const ROLES: Role[] = ["BASIC_USER", "DEVELOPER", "SUPPORT", "ADMIN"];
+const ROLES: Role[] = ["BASIC_USER", "DEVELOPER", "SUPPORT", "ADMIN"]
 
 const ROLE_LABEL: Record<Role, string> = {
   BASIC_USER: "Player",
   DEVELOPER: "Developer",
   SUPPORT: "Support",
   ADMIN: "Administrator",
-};
+}
 
 const STATE_TONE: Record<UserState, string> = {
   ACTIVE: "bg-primary/15 text-primary border-primary/25",
   PENDING: "bg-warning/15 text-warning border-warning/25",
   REJECTED: "bg-muted text-muted-foreground border-border",
   BANNED: "bg-destructive/15 text-destructive border-destructive/25",
-};
+}
 
 export default function AdminPage() {
-  const isAdmin = useHasRole("ADMIN");
-  const me = useAuthStore((state) => state.user);
-  const { data: directory, isPending: isDirectoryPending } = useDirectoryQuery();
-  const { data: pendingRequests, isPending: isRequestsPending } = usePendingRoleRequestsQuery();
+  const isAdmin = useHasRole("ADMIN")
+  const me = useAuthStore((state) => state.user)
+  const { data: directory, isPending: isDirectoryPending } = useDirectoryQuery()
+  const { data: pendingRequests, isPending: isRequestsPending } =
+    usePendingRoleRequestsQuery()
 
-  const decideRegistration = useDecideRegistrationMutation();
-  const decideRole = useDecideRoleRequestMutation();
+  const decideRegistration = useDecideRegistrationMutation()
+  const decideRole = useDecideRoleRequestMutation()
 
   if (!isAdmin) {
     return (
@@ -68,16 +69,19 @@ export default function AdminPage() {
         />
         <h1 className="mt-4 text-lg font-semibold">Administrators only</h1>
       </div>
-    );
+    )
   }
 
-  const users = directory?.items ?? [];
-  const pending = users.filter((user) => user.state === "PENDING");
+  const users = directory?.items ?? []
+  const pending = users.filter((user) => user.state === "PENDING")
   // Use real pending requests if available, otherwise fallback to mock data
-  const requests = pendingRequests ?? directory?.roleRequests?.filter((r) => r.status === "PENDING") ?? [];
-  const rest = users.filter((user) => user.state !== "PENDING");
+  const requests =
+    pendingRequests ??
+    directory?.roleRequests?.filter((r) => r.status === "PENDING") ??
+    []
+  const rest = users.filter((user) => user.state !== "PENDING")
 
-  const isLoading = isDirectoryPending || isRequestsPending;
+  const isLoading = isDirectoryPending || isRequestsPending
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-10">
@@ -169,12 +173,16 @@ export default function AdminPage() {
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">
-                    {request.display_name || `User ${request.user_id.slice(0, 8)}`} wants to be a{" "}
-                    {ROLE_LABEL[request.requested_role]?.toLowerCase() ?? request.requested_role}
+                    {request.display_name ||
+                      `User ${request.user_id.slice(0, 8)}`}{" "}
+                    wants to be a{" "}
+                    {ROLE_LABEL[request.requested_role]?.toLowerCase() ??
+                      request.requested_role}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     asked {formatRelative(request.created_at)}
-                    {request.decision_note && ` · note: ${request.decision_note}`}
+                    {request.decision_note &&
+                      ` · note: ${request.decision_note}`}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -239,13 +247,13 @@ export default function AdminPage() {
         </p>
       </section>
     </div>
-  );
+  )
 }
 
 function UserRow({ user, isSelf }: { user: UserSummary; isSelf: boolean }) {
-  const grantRole = useGrantRoleMutation();
-  const ban = useBanMutation();
-  const busy = grantRole.isPending || ban.isPending;
+  const grantRole = useGrantRoleMutation()
+  const ban = useBanMutation()
+  const busy = grantRole.isPending || ban.isPending
 
   return (
     <li className="flex flex-wrap items-center gap-3 p-4">
@@ -321,5 +329,5 @@ function UserRow({ user, isSelf }: { user: UserSummary; isSelf: boolean }) {
         </Button>
       )}
     </li>
-  );
+  )
 }

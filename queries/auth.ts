@@ -210,5 +210,5 @@ export function usePendingRoleRequestsQuery() {
     queryKey: authKeys.pendingRoleRequests(),
     queryFn: getPendingRoleRequests,
     staleTime: 15 * 1000,
-  });
+  })
 }

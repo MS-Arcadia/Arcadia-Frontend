@@ -95,14 +95,14 @@ export interface AccessTokenClaims {
 
 // types/auth.api.type.ts
 export interface RoleRequestView {
-  request_id: string;
-  user_id: string;
-  requested_role: Role;
-  status: string;
-  decision_note: string;
-  decided_by: string;
-  created_at: string;
+  request_id: string
+  user_id: string
+  requested_role: Role
+  status: string
+  decision_note: string
+  decided_by: string
+  created_at: string
   // optional fields for mock
-  display_name?: string;
-  email?: string;
+  display_name?: string
+  email?: string
 }

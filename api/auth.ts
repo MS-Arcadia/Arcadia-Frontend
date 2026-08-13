@@ -47,8 +47,10 @@ export async function getProfile(userId: string): Promise<PublicProfile> {
 }
 
 export async function getPendingRoleRequests(): Promise<RoleRequestView[]> {
-  const { data } = await http.get<RoleRequestView[]>(API.auth.pendingRoleRequests);
-  return data;
+  const { data } = await http.get<RoleRequestView[]>(
+    API.auth.pendingRoleRequests
+  )
+  return data
 }
 
 /** Hide a owned game from the public shelf. Own profile only. */
