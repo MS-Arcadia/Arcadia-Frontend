@@ -127,7 +127,13 @@ export const API = {
     runMatching: "/marketplace/v1/admin/matching/run",
   },
   reviews: {
-    create: "/reviews/api/reviews",
+    /**
+     * The trailing slash is load-bearing. review-service declares this one route as
+     * `@router.post("/")` under an `/api/reviews` prefix, so without it FastAPI answers 307
+     * to `http://review-service:8088/api/reviews/` — an address that exists only inside the
+     * cluster, over http, from an https page. Posting a review simply did not work.
+     */
+    create: "/reviews/api/reviews/",
     edit: (id: string) => `/reviews/api/reviews/${id}`,
     remove: (id: string) => `/reviews/api/reviews/${id}`,
     forGame: (gameId: string) => `/reviews/api/reviews/game/${gameId}`,
