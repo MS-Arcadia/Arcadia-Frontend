@@ -35,9 +35,8 @@ export const API = {
     grantRole: (userId: string) => `/auth/v1/admin/users/${userId}/grant-role`,
     ban: (userId: string) => `/auth/v1/admin/users/${userId}/ban`,
     unban: (userId: string) => `/auth/v1/admin/users/${userId}/unban`,
-    /** Not a real endpoint on the auth service — the admin screens need a list of
-     *  people and there is no query API for it yet. Mock-only, and the developer
-     *  note in the admin page says so. */
+    /** The admin screen's directory. Real now — it used to be mock-only, which is
+     *  why that screen listed nobody against the live platform. */
     users: "/auth/v1/admin/users",
   },
   catalog: {

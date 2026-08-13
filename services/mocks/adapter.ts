@@ -128,10 +128,13 @@ route("post", API.auth.requestRole, ({ body }) =>
   mock.requestRole(str(body.requested_role, "DEVELOPER") as Role)
 )
 
-route("get", API.auth.users, () => ({
-  items: mock.allUsers(),
-  roleRequests: mock.roleRequests(),
-}))
+// Two routes, because the service has two. The mock used to return them as one
+// combined object, which is the shape no deployment ever produced — and why the
+// admin screen looked fine here and listed nobody against the real platform.
+route("get", API.auth.users, () => mock.allUsers())
+route("get", API.auth.pendingRoleRequests, () =>
+  mock.roleRequests().filter((request) => request.status === "PENDING")
+)
 
 route("post", API.auth.decideRegistration(":id"), ({ params, body }) =>
   mock.decideRegistration(params[0], body.approve === true)

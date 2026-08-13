@@ -74,7 +74,8 @@ export default function AdminPage() {
 
   const users = directory?.items ?? []
   const pending = users.filter((user) => user.state === "PENDING")
-  // Use real pending requests if available, otherwise fallback to mock data
+  // Both come from the same two real endpoints now; the directory fetches them
+  // together because the screen shows them together.
   const requests =
     pendingRequests ??
     directory?.roleRequests?.filter((r) => r.status === "PENDING") ??
@@ -241,10 +242,6 @@ export default function AdminPage() {
             ))}
           </ul>
         )}
-        <p className="text-xs text-muted-foreground/70">
-          The auth service has no search endpoint, so this list comes from the
-          mock. With a real service behind it, this section needs one adding.
-        </p>
       </section>
     </div>
   )

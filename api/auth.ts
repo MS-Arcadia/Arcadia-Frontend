@@ -92,16 +92,19 @@ export interface Directory {
 }
 
 /**
- * The account directory.
+ * The account directory, assembled from the two real endpoints that answer it.
  *
- * The auth service has no query endpoint for this — its admin routes all act on a
- * user you already know the id of. The admin screen needs a list, so the mock
- * provides one and the page says as much. When somebody adds a real search
- * endpoint, only this function changes.
+ * The auth service used to have neither, so this called a `/admin/users` that
+ * did not exist: the page listed nobody against the real platform while its ban
+ * and grant-role buttons worked on people it could not display. Both halves are
+ * now genuine routes, fetched together because the screen shows them together.
  */
 export async function getDirectory(): Promise<Directory> {
-  const { data } = await http.get<Directory>(API.auth.users)
-  return data
+  const [users, roleRequests] = await Promise.all([
+    http.get<UserSummary[]>(API.auth.users),
+    http.get<RoleRequestView[]>(API.auth.pendingRoleRequests),
+  ])
+  return { items: users.data, roleRequests: roleRequests.data }
 }
 
 export async function decideRegistration(
