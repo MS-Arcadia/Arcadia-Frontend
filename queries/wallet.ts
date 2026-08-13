@@ -3,7 +3,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-import { getLedger, getWallet, topUpWallet, walletKeys } from "@/api/wallet"
+import {
+  getLedger,
+  getWallet,
+  initiateCharge,
+  redeemGiftCard,
+  walletKeys,
+} from "@/api/wallet"
 import { formatMoney } from "@/lib/money"
 
 export function useWalletQuery() {
@@ -22,14 +28,35 @@ export function useLedgerQuery() {
   })
 }
 
-export function useTopUpMutation() {
+/**
+ * Starts a bank top-up and hands the browser to the bank.
+ *
+ * There is deliberately no success toast about a new balance: nothing has been
+ * credited yet. The money arrives when the bank confirms and the payment
+ * service publishes `BankPaymentConfirmed`, which is after this page is gone.
+ * The previous version claimed a balance the platform had not agreed to.
+ */
+export function useInitiateChargeMutation() {
+  return useMutation({
+    mutationFn: initiateCharge,
+    onSuccess: (charge) => {
+      toast.success("Taking you to the bank", {
+        description: `Authorise ${formatMoney(charge.amount)} to finish topping up.`,
+      })
+      window.location.assign(charge.redirect_url)
+    },
+  })
+}
+
+/** Credits immediately, so this one really can report the new balance. */
+export function useRedeemGiftCardMutation() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: topUpWallet,
-    onSuccess: (wallet) => {
+    mutationFn: redeemGiftCard,
+    onSuccess: (result) => {
       void client.invalidateQueries({ queryKey: walletKeys.all })
-      toast.success("Wallet topped up", {
-        description: `New balance: ${formatMoney(wallet.balance)}`,
+      toast.success(`${formatMoney(result.credited)} added`, {
+        description: `New balance: ${formatMoney(result.wallet.balance)}`,
       })
     },
   })

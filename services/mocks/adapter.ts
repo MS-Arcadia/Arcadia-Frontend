@@ -336,14 +336,52 @@ route("get", API.wallet.ledger, ({ query }) =>
   paginate(db.ledgers[mock.currentUser().user_id] ?? [], query)
 )
 route("get", API.wallet.holds, ({ query }) => paginate([], query))
-route("post", API.wallet.topUp, ({ body }) => {
+// Starting a top-up credits nothing and hands back a redirect, exactly as the
+// wallet service does. The old route credited immediately and returned the new
+// balance — a shape no deployment has ever produced, which is how the demo
+// showed a working top-up while the real path 404'd.
+route("post", API.wallet.charges, ({ body }) => {
   const amount = body.amount as
     { amount_minor?: string; currency?: string } | undefined
-  return mock.topUp({
+  return mock.initiateCharge({
     amount_minor: String(amount?.amount_minor ?? "0"),
     currency: String(amount?.currency ?? "IRR"),
   })
 })
+
+route("post", API.wallet.redeemGiftCard, ({ body }) =>
+  mock.redeemGiftCard(str(body.code))
+)
+
+// --- the sandbox bank (mock mode only) --------------------------------------
+//
+// Against a real platform the redirect goes to payment-service's /mock-bank/pay
+// and the wallet is credited when its confirmation reaches Kafka. With no
+// backend there is nothing to redirect to, so these two stand in for it — the
+// flow the user walks through is the same one, which is the point.
+
+route("get", API.mockBank.charge(":id"), ({ params }) => {
+  const charge = mock.chargeById(params[0])
+  return { payment_intent_id: params[0], ...charge }
+})
+
+route("post", API.mockBank.confirm(":id"), ({ params }) =>
+  mock.settleCharge(params[0])
+)
+
+// Support issues gift cards (requirement 1.1). Not a wallet-service path a user
+// ever calls, so it lives under the same admin-ish umbrella as the mock-only
+// user list.
+route("post", API.wallet.issueGiftCard, ({ body }) => {
+  const amount = body.amount as
+    { amount_minor?: string; currency?: string } | undefined
+  return mock.issueGiftCard({
+    amount_minor: String(amount?.amount_minor ?? "0"),
+    currency: String(amount?.currency ?? "IRR"),
+  })
+})
+
+route("get", API.wallet.giftCards, () => ({ items: mock.listGiftCards() }))
 
 // --- notifications ---------------------------------------------------------
 

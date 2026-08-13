@@ -81,7 +81,32 @@ export const API = {
     me: "/wallet/v1/wallets/me",
     ledger: "/wallet/v1/wallets/me/ledger",
     holds: "/wallet/v1/wallets/me/holds",
-    topUp: "/wallet/v1/wallets/me/top-ups",
+    /**
+     * Starting a bank top-up. Not "top-ups": this asks the Payment Adapter for
+     * a redirect URL and moves no money — the wallet is credited when the bank
+     * confirms over Kafka. The path used to be `/top-ups`, which no service has
+     * ever served; mock mode answered it, so the whole flow looked healthy in a
+     * demo and 404'd against the real platform.
+     */
+    charges: "/wallet/v1/wallets/me/charges",
+    redeemGiftCard: "/wallet/v1/wallets/me/gift-cards/redeem",
+    /** Support issues a card; requirement 1.1. */
+    issueGiftCard: "/wallet/v1/gift-cards",
+    giftCards: "/wallet/v1/gift-cards",
+  },
+  /**
+   * The sandbox bank, and mock-only.
+   *
+   * Against a real platform `charges` returns a redirect into
+   * payment-service's own `/mock-bank/pay`, and the wallet is credited when its
+   * confirmation reaches Kafka. With no backend there is nothing to redirect
+   * to, so the mock adapter serves these two and the app walks the same
+   * redirect-authorise-return flow. Nothing outside the mock bank page calls
+   * them.
+   */
+  mockBank: {
+    charge: (intentId: string) => `/mock-bank/v1/charges/${intentId}`,
+    confirm: (intentId: string) => `/mock-bank/v1/charges/${intentId}/confirm`,
   },
   notifications: {
     list: "/notifications/v1/notifications",
