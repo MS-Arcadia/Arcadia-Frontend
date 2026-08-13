@@ -1,7 +1,7 @@
 # Arcadia Frontend — Agent Rules
 
-You are a **senior frontend engineer** working on the Arcadia storefront, the web client for an
-eleven-service game distribution platform, reached through a gateway. Read this file in full before
+You are a **senior frontend engineer** working on the Arcadia storefront, the web client for a
+twelve-service game distribution platform, reached through a gateway. Read this file in full before
 writing or editing any code.
 
 > `AGENTS.md` in this repo also applies: this is **Next.js 16**, whose APIs differ from most training
@@ -80,7 +80,7 @@ providers/            React context providers
 
 ## The backend, and how this app talks to it
 
-Eleven services behind `api-gateway`, on `:8090` locally. Every path is written service-prefixed
+Twelve services behind `api-gateway`, on `:8090` locally. Every path is written service-prefixed
 against one base URL in `lib/api-paths.ts` — `/catalog/v1/games`, `/orders/v1/orders`, and so on —
 and those prefixes are literally the gateway's own routing table (`api-gateway/internal/gateway/routes.go`),
 so a path that is wrong here is wrong there too. Two environment variables decide what answers:
@@ -97,15 +97,24 @@ no backend running. `pnpm dev` reads `.env.local`, which is not committed — se
 gateway's address to develop against the real platform, or leave it `mock` to work with no backend
 at all.
 
-Only five of the eleven services are wired up here so far — `auth`, `catalog`, `orders`, `wallet`,
-`notifications` in `lib/api-paths.ts`, with a matching mock route in `services/mocks/adapter.ts` for
-each. `media-service`, `marketplace-service`, `review-service`, `festival-service` and
-`community-service` have no paths, `api/` functions, `queries/` hooks, `types/`, or mock routes yet —
-there is no UI for uploading media directly, browsing the item market, posting a review, or the
-community forum. Building one of those screens starts the same way any existing one did: add the
-path to `lib/api-paths.ts`, the function to `api/`, the hook to `queries/`, the wire types to
-`types/`, and a route to `services/mocks/adapter.ts` — read the owning service's own README for its
-exact request/response shape before writing the type, per the rule below.
+Ten of the gateway's twelve prefixes are wired up here — `auth`, `catalog`, `orders`, `wallet`,
+`notifications`, `marketplace`, `reviews`, `festivals`, `community`, `recommendations` in
+`lib/api-paths.ts`, each with a matching mock route in `services/mocks/adapter.ts`.
+
+The two that are not:
+
+- **`media-service`** has no paths, `api/` functions or hooks. Nothing here uploads a file. Game art
+  arrives already-signed inside a game's `media[]`, and the Install button in the library is
+  deliberately disabled with a tooltip saying why rather than wired to nothing.
+- **`payment-service`** is reached by redirect, not by call. `POST /wallet/v1/charges` answers with a
+  `redirect_url` and the browser follows it to the bank; the only frontend piece is the
+  `/mock-bank/[intentId]` page, which stands in for that bank **under the mock only** — against a
+  real platform the redirect goes to payment-service's own sandbox page instead.
+
+Building a screen for either starts the way every existing one did: add the path to
+`lib/api-paths.ts`, the function to `api/`, the hook to `queries/`, the wire types to `types/`, and a
+route to `services/mocks/adapter.ts` — read the owning service's own README or DTO for its exact
+request/response shape before writing the type, per the rule below.
 
 ### The mock layer is a real adapter, not a fixture folder
 
