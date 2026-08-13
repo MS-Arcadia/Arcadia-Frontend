@@ -12,14 +12,22 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useLibraryQuery } from "@/queries/catalog"
+import { useLibraryQuery, useOwnedGamesQuery } from "@/queries/catalog"
 import { formatDate } from "@/lib/datetime"
 import { formatNumber } from "@/lib/money"
 import { gameArt } from "@/lib/game-art"
 
 export default function LibraryPage() {
-  const { data, isPending } = useLibraryQuery()
+  const { data, isPending: libraryPending } = useLibraryQuery()
   const entries = data?.items ?? []
+
+  // The library answers ownership records, not games — no title, no art, just `game_id`.
+  // Each one is fetched on its own so it shares a cache entry with the store and the game
+  // page rather than being a third copy of the same title.
+  const { games, isPending: gamesPending } = useOwnedGamesQuery(
+    entries.map((entry) => entry.game_id)
+  )
+  const isPending = libraryPending || (entries.length > 0 && gamesPending)
 
   return (
     <div className="mx-auto w-full max-w-[92rem] space-y-6">
@@ -65,7 +73,9 @@ export default function LibraryPage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {entries.map(({ game, ownership }) => {
+        {entries.map((ownership) => {
+          const game = games.get(ownership.game_id)
+          if (!game) return null
           const art = gameArt(game.media)
           return (
             <article

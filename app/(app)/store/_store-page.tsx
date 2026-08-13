@@ -35,7 +35,7 @@ export function StorePage() {
   const { data: library } = useLibraryQuery()
 
   const owned = useMemo(
-    () => new Set((library?.items ?? []).map((entry) => entry.game.id)),
+    () => new Set((library?.items ?? []).map((entry) => entry.game_id)),
     [library]
   )
 

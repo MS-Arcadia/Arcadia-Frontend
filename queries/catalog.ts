@@ -1,6 +1,6 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
+import { useQueries, useQuery } from "@tanstack/react-query"
 
 import {
   catalogKeys,
@@ -27,6 +27,32 @@ export function useGameQuery(id: string) {
     queryFn: () => getGame(id),
     staleTime: 5 * 60 * 1000,
     enabled: Boolean(id),
+  })
+}
+
+/**
+ * The games behind a set of ownership records.
+ *
+ * `/catalog/v1/library` returns ownerships carrying `game_id` and no title, so a screen that
+ * shows what you own has to ask for each one. One query per game rather than a single joined
+ * call, because they cache and invalidate individually — opening a game you own then costs
+ * nothing, and the store's copy of it is the same cache entry.
+ */
+export function useOwnedGamesQuery(gameIds: string[]) {
+  return useQueries({
+    queries: gameIds.map((id) => ({
+      queryKey: catalogKeys.game(id),
+      queryFn: () => getGame(id),
+      staleTime: 5 * 60 * 1000,
+    })),
+    combine: (results) => ({
+      games: new Map(
+        results.flatMap((result) =>
+          result.data ? [[result.data.id, result.data]] : []
+        )
+      ),
+      isPending: results.some((result) => result.isPending),
+    }),
   })
 }
 

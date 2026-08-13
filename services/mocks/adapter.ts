@@ -39,6 +39,15 @@ interface Route {
 
 const routes: Route[] = []
 
+/** Header lookup that does not care how axios cased the name. */
+function idempotencyKey(config: { headers?: unknown }): string {
+  const headers = (config.headers ?? {}) as Record<string, unknown>
+  const found = Object.entries(headers).find(
+    ([name]) => name.toLowerCase() === "idempotency-key"
+  )
+  return typeof found?.[1] === "string" ? found[1] : ""
+}
+
 function route(method: string, path: string, handler: Handler): void {
   // `:id` becomes a capture group; everything else is matched literally.
   const pattern = new RegExp(
@@ -210,17 +219,15 @@ route("get", API.catalog.game(":id"), ({ params }) => ({
   promotions: mock.promotionsOf(params[0]),
 }))
 
+// `Page[OwnershipView]` — the ownership records alone, which is all catalog-service returns.
+// This used to answer `{ ownership, game }` pairs, and the library page read the game
+// straight out of them; against the real service that game is undefined and the page throws.
+// A caller that needs the title fetches it by `game_id`, as the page now does.
 route("get", API.catalog.library, ({ query }) => {
   const user = mock.currentUser()
-  const items = db.ownerships
-    .filter(
-      (entry) => entry.owner_id === user.user_id && entry.status === "ACTIVE"
-    )
-    .map((ownership) => ({
-      ownership,
-      game: db.games.find((game) => game.id === ownership.game_id) ?? null,
-    }))
-    .filter((entry) => entry.game !== null)
+  const items = db.ownerships.filter(
+    (entry) => entry.owner_id === user.user_id && entry.status === "ACTIVE"
+  )
   return paginate(items, query)
 })
 
@@ -867,6 +874,24 @@ const adapter: AxiosAdapter = async (config: InternalAxiosRequestConfig) => {
         response: respond(status, problem(status, reason, message)),
       })
     )
+
+  // wallet-service refuses any operation that moves money without an Idempotency-Key, and
+  // order-service calls it "mandatory, never defaulted". Enforced here for the same reason
+  // the rest of this file enforces the platform's rules: the client shipped without ever
+  // sending the header, and a mock that accepted the write is precisely what let that reach
+  // production looking healthy. Only these two prefixes — auth's POST /login needs no key,
+  // and pretending otherwise would be a different lie.
+  if (
+    method !== "get" &&
+    (path.startsWith("/wallet/") || path.startsWith("/orders/")) &&
+    !idempotencyKey(config)
+  ) {
+    return reject(
+      400,
+      "IDEMPOTENCY_KEY_REQUIRED",
+      "an Idempotency-Key header is required for this request"
+    )
+  }
 
   for (const candidate of routes) {
     if (candidate.method !== method) continue

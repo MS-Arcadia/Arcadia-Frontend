@@ -26,6 +26,31 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config
 })
 
+const WRITES = new Set(["post", "put", "patch", "delete"])
+
+/**
+ * An `Idempotency-Key` on every write.
+ *
+ * Not optional: wallet-service refuses any operation that moves money without one, and
+ * order-service calls it "mandatory, never defaulted" for placing an order, gifting and
+ * pre-ordering. Nothing here sent one, so against the real platform buying a game, topping
+ * up, redeeming a gift card and every other write answered 400 — while the mock, which
+ * never asked for the header, made all of it look fine.
+ *
+ * Minting it client-side is the point rather than a workaround. The services deliberately
+ * will not invent a key, because only the caller knows whether a second request is a new
+ * purchase or the same one arriving twice. The key is written onto the request config, so
+ * an axios retry of *this* request carries the same one and the service can recognise the
+ * duplicate — which is exactly the protection the header exists for.
+ */
+http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const method = config.method?.toLowerCase() ?? "get"
+  if (WRITES.has(method) && !config.headers["Idempotency-Key"]) {
+    config.headers["Idempotency-Key"] = crypto.randomUUID()
+  }
+  return config
+})
+
 /**
  * Turn a service's RFC 7807 document into a message worth showing, once.
  *

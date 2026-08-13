@@ -63,7 +63,7 @@ export function GamePage({ id }: Props) {
 
   const art = gameArt(game.media)
   const owned = (library?.items ?? []).some(
-    (entry) => entry.game.id === game.id
+    (entry) => entry.game_id === game.id
   )
   const preorder = game.state === "PREORDER"
 
