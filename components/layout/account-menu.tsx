@@ -139,5 +139,5 @@ export function AccountMenu() {
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  );
+  )
 }
