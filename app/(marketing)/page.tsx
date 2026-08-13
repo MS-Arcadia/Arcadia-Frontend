@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 
+import { FeaturedGames } from "@/components/marketing/featured-games"
 import { LandingHero } from "@/components/marketing/landing-hero"
 import { Reveal } from "@/components/marketing/reveal"
 import { WorkflowDiagram } from "@/components/marketing/workflow-diagram"
@@ -70,6 +71,9 @@ export default function LandingPage() {
   return (
     <>
       <LandingHero />
+
+      {/* Real games, before the explanation of how to buy them. */}
+      <FeaturedGames />
 
       {/* --- the four routes ------------------------------------------- */}
       <section className="mx-auto max-w-6xl px-6 py-20 lg:px-10 lg:py-28">

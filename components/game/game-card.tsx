@@ -12,6 +12,10 @@ interface Props {
   game: Game
   owned?: boolean
   priority?: boolean
+  /** Where the card links. The public catalogue uses `/browse`, whose detail page
+   *  offers an account rather than an acquire panel; the signed-in store uses
+   *  `/games`, which is behind the auth guard. */
+  basePath?: "/games" | "/browse"
 }
 
 function cover(game: Game): string | null {
@@ -19,13 +23,18 @@ function cover(game: Game): string | null {
   return art?.media_ref ?? null
 }
 
-export function GameCard({ game, owned = false, priority = false }: Props) {
+export function GameCard({
+  game,
+  owned = false,
+  priority = false,
+  basePath = "/games",
+}: Props) {
   const art = cover(game)
   const preorder = game.state === "PREORDER"
 
   return (
     <Link
-      href={`/games/${game.id}`}
+      href={`${basePath}/${game.id}`}
       className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/40 focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-muted">

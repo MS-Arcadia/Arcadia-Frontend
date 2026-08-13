@@ -8,7 +8,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useSimilarGamesQuery } from "@/queries/recommendations"
 
 /** Public — content-based, so it renders the same for a signed-out visitor. */
-export function SimilarGamesRail({ gameId }: { gameId: string }) {
+interface Props {
+  gameId: string
+  /** Same reason GameCard takes one: the public page must not link into the
+   *  signed-in shell. */
+  basePath?: "/games" | "/browse"
+}
+
+export function SimilarGamesRail({ gameId, basePath = "/games" }: Props) {
   const { data, isPending, isError } = useSimilarGamesQuery(gameId, 6)
 
   if (isError) return null
@@ -26,7 +33,7 @@ export function SimilarGamesRail({ gameId }: { gameId: string }) {
           : data?.items.map((item) => (
               <Link
                 key={item.game_id}
-                href={`/games/${item.game_id}`}
+                href={`${basePath}/${item.game_id}`}
                 className="shrink-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Card className="h-28 w-56 justify-center p-4 ring-1 ring-foreground/10 transition-colors hover:ring-foreground/20">
