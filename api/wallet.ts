@@ -1,9 +1,9 @@
 import { API } from "@/lib/api-paths"
 import { http } from "@/services/http"
-import type { Money, Page } from "@/types/common.api.type"
+import type { Money } from "@/types/common.api.type"
 import type {
   ChargeResult,
-  LedgerEntry,
+  LedgerPage,
   RedeemGiftCardResult,
   Wallet,
 } from "@/types/wallet.api.type"
@@ -20,9 +20,10 @@ export async function getWallet(): Promise<Wallet> {
   return data
 }
 
-export async function getLedger(): Promise<Page<LedgerEntry>> {
-  const { data } = await http.get<Page<LedgerEntry>>(API.wallet.ledger, {
-    params: { limit: 50 },
+/** Page-numbered, not limit/offset — see the note on `LedgerPage`. */
+export async function getLedger(): Promise<LedgerPage> {
+  const { data } = await http.get<LedgerPage>(API.wallet.ledger, {
+    params: { page: 1, page_size: 50 },
   })
   return data
 }

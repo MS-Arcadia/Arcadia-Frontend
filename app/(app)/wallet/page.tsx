@@ -171,7 +171,7 @@ export default function WalletPage() {
         </p>
 
         <ul className="divide-y divide-border rounded-xl border border-border">
-          {(ledger?.items ?? []).map((entry) => {
+          {(ledger?.entries ?? []).map((entry) => {
             const credit = entry.direction === "CREDIT"
             return (
               <li key={entry.id} className="flex items-center gap-3 p-4">
@@ -220,7 +220,7 @@ export default function WalletPage() {
             )
           })}
 
-          {ledger && ledger.items.length === 0 && (
+          {ledger && ledger.entries.length === 0 && (
             <li className="p-8 text-center text-sm text-muted-foreground">
               Nothing has moved yet.
             </li>

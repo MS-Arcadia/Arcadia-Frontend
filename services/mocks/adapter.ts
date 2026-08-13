@@ -58,6 +58,25 @@ function paginate<T>(items: T[], query: URLSearchParams): Page<T> {
   }
 }
 
+/** The Go services' pagination: 1-based pages, and the array named after its
+ *  contents rather than a generic `items`. */
+function pageNumbered<T>(
+  items: T[],
+  query: URLSearchParams,
+  key: string
+): Record<string, unknown> {
+  const page = Math.max(1, Number(query.get("page") ?? 1))
+  const pageSize = Number(query.get("page_size") ?? 20)
+  const start = (page - 1) * pageSize
+  return {
+    [key]: items.slice(start, start + pageSize),
+    total_items: items.length,
+    page,
+    page_size: pageSize,
+    total_pages: Math.max(1, Math.ceil(items.length / pageSize)),
+  }
+}
+
 function str(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback
 }
@@ -332,10 +351,13 @@ route("get", API.orders.plan(":id"), ({ params }) => {
 // --- wallet ----------------------------------------------------------------
 
 route("get", API.wallet.me, () => mock.walletOf(mock.currentUser().user_id))
+// The wallet service paginates by page number, not limit/offset, and names the
+// array after what is in it. Returning a `Page<T>` here would have hidden the
+// mismatch that left the real ledger permanently empty.
 route("get", API.wallet.ledger, ({ query }) =>
-  paginate(db.ledgers[mock.currentUser().user_id] ?? [], query)
+  pageNumbered(db.ledgers[mock.currentUser().user_id] ?? [], query, "entries")
 )
-route("get", API.wallet.holds, ({ query }) => paginate([], query))
+route("get", API.wallet.holds, ({ query }) => pageNumbered([], query, "holds"))
 // Starting a top-up credits nothing and hands back a redirect, exactly as the
 // wallet service does. The old route credited immediately and returned the new
 // balance — a shape no deployment has ever produced, which is how the demo

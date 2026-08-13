@@ -18,6 +18,22 @@ export interface Wallet {
   updated_at: string
 }
 
+/**
+ * The wallet service paginates differently from the Python services.
+ *
+ * Its `LedgerPage` is `{entries, total_items, page, page_size, total_pages}` —
+ * page-numbered — while `Page<T>` elsewhere is `{items, total, limit, offset}`.
+ * Reading the ledger as a `Page<T>` meant `items` was always undefined, so the
+ * balance rendered and the history below it was permanently empty.
+ */
+export interface LedgerPage {
+  entries: LedgerEntry[]
+  total_items: number
+  page: number
+  page_size: number
+  total_pages: number
+}
+
 export type LedgerDirection = "CREDIT" | "DEBIT"
 
 export interface LedgerEntry {
