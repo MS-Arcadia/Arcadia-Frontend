@@ -7,11 +7,13 @@ import type {
   RegisterResponse,
   TokenPair,
   UserSummary,
+  RoleRequestView,
 } from "@/types/auth.api.type"
 import type { Role } from "@/types/common.api.type"
 
 export const authKeys = {
   all: ["auth"] as const,
+  pendingRoleRequests: () => ["auth", "pending-role-requests"] as const,
   profile: (userId: string) => ["auth", "profile", userId] as const,
   directory: () => ["auth", "directory"] as const,
 }
@@ -44,6 +46,11 @@ export async function getProfile(userId: string): Promise<PublicProfile> {
   return data
 }
 
+export async function getPendingRoleRequests(): Promise<RoleRequestView[]> {
+  const { data } = await http.get<RoleRequestView[]>(API.auth.pendingRoleRequests);
+  return data;
+}
+
 /** Hide a owned game from the public shelf. Own profile only. */
 export async function hideGame(gameId: string): Promise<void> {
   await http.post(API.auth.hideGame, { game_id: gameId })
@@ -66,16 +73,16 @@ export async function requestRole(
   return data
 }
 
-export interface RoleRequestView {
-  request_id: string
-  user_id: string
-  display_name: string
-  email: string
-  requested_role: Role
-  status: string
-  note: string
-  created_at: string
-}
+// export interface RoleRequestView {
+//   request_id: string
+//   user_id: string
+//   display_name: string
+//   email: string
+//   requested_role: Role
+//   status: string
+//   note: string
+//   created_at: string
+// }
 
 export interface Directory {
   items: UserSummary[]

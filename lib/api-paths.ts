@@ -24,6 +24,7 @@ export const API = {
     logout: "/auth/v1/auth/logout",
     /** By id. There is no "me" route; the id comes from the token's `sub`. */
     profile: (userId: string) => `/auth/v1/profile/${userId}`,
+    pendingRoleRequests: "/auth/v1/admin/role-requests/pending",
     hideGame: "/auth/v1/profile/library/hide",
     unhideGame: "/auth/v1/profile/library/unhide",
     requestRole: "/auth/v1/roles/request",

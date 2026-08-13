@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import Link from "next/link"
+import Link from "next/link";
 import {
   ChevronDown,
   ClipboardList,
@@ -8,29 +8,30 @@ import {
   ShieldCheck,
   Sparkles,
   UserRound,
-} from "lucide-react"
+} from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useLogoutMutation, useRequestRoleMutation } from "@/queries/auth"
-import { useAuthStore } from "@/stores/auth.store"
-import type { Role } from "@/types/common.api.type"
+} from "@/components/ui/dropdown-menu";
+import { useLogoutMutation, useRequestRoleMutation } from "@/queries/auth";
+import { useAuthStore } from "@/stores/auth.store";
+import type { Role } from "@/types/common.api.type";
 
 const ROLE_LABEL: Record<Role, string> = {
   BASIC_USER: "Player",
   DEVELOPER: "Developer",
   SUPPORT: "Support",
   ADMIN: "Administrator",
-}
+};
 
 function initials(name: string): string {
   return name
@@ -38,15 +39,15 @@ function initials(name: string): string {
     .slice(0, 2)
     .map((part) => part.at(0) ?? "")
     .join("")
-    .toUpperCase()
+    .toUpperCase();
 }
 
 export function AccountMenu() {
-  const user = useAuthStore((state) => state.user)
-  const signOut = useLogoutMutation()
-  const requestRole = useRequestRoleMutation()
+  const user = useAuthStore((state) => state.user);
+  const signOut = useLogoutMutation();
+  const requestRole = useRequestRoleMutation();
 
-  if (!user) return null
+  if (!user) return null;
 
   return (
     <div className="flex items-center gap-0.5">
@@ -79,63 +80,82 @@ export function AccountMenu() {
         />
 
         <DropdownMenuContent align="end" className="w-60">
-          <DropdownMenuLabel className="space-y-1">
-            <p className="text-sm font-medium">{user.display_name}</p>
-            <p className="text-xs font-normal text-muted-foreground">
-              {user.email}
-            </p>
-            <Badge className="mt-1 border-primary/25 bg-primary/15 text-primary">
-              {ROLE_LABEL[user.role]}
-            </Badge>
-          </DropdownMenuLabel>
+          {/* Group: user info */}
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="space-y-1">
+              <p className="text-sm font-medium">{user.display_name}</p>
+              <p className="text-xs font-normal text-muted-foreground">
+                {user.email}
+              </p>
+              <Badge className="mt-1 border-primary/25 bg-primary/15 text-primary">
+                {ROLE_LABEL[user.role]}
+              </Badge>
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem render={<Link href="/profile" />}>
-            <UserRound className="size-4" />
-            Profile
-          </DropdownMenuItem>
-
-          {user.role === "DEVELOPER" && (
-            <DropdownMenuItem render={<Link href="/developer" />}>
-              <Sparkles className="size-4" />
-              My games
+          {/* Group: navigation items */}
+          <DropdownMenuGroup>
+            {/* Profile is already accessible via avatar click; you may keep or remove it */}
+            <DropdownMenuItem render={<Link href="/profile" />}>
+              <UserRound className="size-4" />
+              Profile
             </DropdownMenuItem>
-          )}
 
-          {(user.role === "SUPPORT" || user.role === "ADMIN") && (
-            <DropdownMenuItem render={<Link href="/review" />}>
-              <ShieldCheck className="size-4" />
-              Review queue
-            </DropdownMenuItem>
-          )}
+            {user.role === "DEVELOPER" && (
+              <DropdownMenuItem render={<Link href="/developer" />}>
+                <Sparkles className="size-4" />
+                My games
+              </DropdownMenuItem>
+            )}
 
-          {user.role === "ADMIN" && (
-            <DropdownMenuItem render={<Link href="/admin" />}>
-              <ClipboardList className="size-4" />
-              Accounts
-            </DropdownMenuItem>
-          )}
+            {(user.role === "SUPPORT" || user.role === "ADMIN") && (
+              <DropdownMenuItem render={<Link href="/review" />}>
+                <ShieldCheck className="size-4" />
+                Review queue
+              </DropdownMenuItem>
+            )}
 
-          {user.role === "BASIC_USER" && (
+            {user.role === "ADMIN" && (
+              <DropdownMenuItem render={<Link href="/admin" />}>
+                <ClipboardList className="size-4" />
+                Accounts
+              </DropdownMenuItem>
+            )}
+
+            {user.role === "BASIC_USER" && (
+              <DropdownMenuItem
+                onClick={() => requestRole.mutate("DEVELOPER")}
+                disabled={requestRole.isPending}
+              >
+                <Sparkles className="size-4" />
+                Ask to become a developer
+              </DropdownMenuItem>
+            )}
+            {user.role === "BASIC_USER" && (
+              <DropdownMenuItem
+                onClick={() => requestRole.mutate("SUPPORT")}
+                disabled={requestRole.isPending}
+              >
+                <Sparkles className="size-4" />
+                Ask to become a support
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuGroup>
+
+          <DropdownMenuSeparator />
+
+          {/* Group: sign out */}
+          <DropdownMenuGroup>
             <DropdownMenuItem
-              onClick={() => requestRole.mutate("DEVELOPER")}
-              disabled={requestRole.isPending}
+              onClick={() => signOut.mutate()}
+              disabled={signOut.isPending}
             >
-              <Sparkles className="size-4" />
-              Ask to become a developer
+              <LogOut className="size-4" />
+              Sign out
             </DropdownMenuItem>
-          )}
-
-          <DropdownMenuSeparator />
-
-          <DropdownMenuItem
-            onClick={() => signOut.mutate()}
-            disabled={signOut.isPending}
-          >
-            <LogOut className="size-4" />
-            Sign out
-          </DropdownMenuItem>
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

@@ -17,6 +17,7 @@ import {
   register,
   requestRole,
   unbanUser,
+  getPendingRoleRequests,
 } from "@/api/auth"
 import { ls } from "@/lib/local-storage"
 import { STORAGE_KEYS } from "@/lib/storage-keys"
@@ -202,4 +203,12 @@ export function useBanMutation() {
       )
     },
   })
+}
+
+export function usePendingRoleRequestsQuery() {
+  return useQuery({
+    queryKey: authKeys.pendingRoleRequests(),
+    queryFn: getPendingRoleRequests,
+    staleTime: 15 * 1000,
+  });
 }
