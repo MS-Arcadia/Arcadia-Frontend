@@ -2,6 +2,7 @@ import {
   Bell,
   ClipboardCheck,
   Gamepad2,
+  Gift,
   LibraryBig,
   MessagesSquare,
   PartyPopper,
@@ -61,6 +62,14 @@ export const STAFF_NAV: NavItem[] = [
     href: "/community/moderation",
     label: "Community reports",
     icon: MessagesSquare,
+    roles: ["SUPPORT", "ADMIN"],
+  },
+  {
+    // Support and Admin both, because the wallet allows both to issue them. Gating this
+    // to Admin would hide it from half the people entitled to use it.
+    href: "/gift-cards",
+    label: "Gift cards",
+    icon: Gift,
     roles: ["SUPPORT", "ADMIN"],
   },
   { href: "/admin", label: "Accounts", icon: UserRound, roles: ["ADMIN"] },

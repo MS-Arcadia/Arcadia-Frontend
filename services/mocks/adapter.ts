@@ -415,6 +415,25 @@ route("post", API.wallet.redeemGiftCard, ({ body }) =>
   mock.redeemGiftCard(str(body.code))
 )
 
+// Support and Admin mint cards; requirement 1.1. There was no route here because
+// nothing in the app could issue one — only redeem, against codes that had to be
+// seeded by hand.
+route("post", API.wallet.issueGiftCard, ({ body }) => {
+  const value = body.value as { amount_minor?: string; currency?: string }
+  return mock.issueGiftCards(
+    {
+      amount_minor: str(value?.amount_minor, "0"),
+      currency: str(value?.currency, "IRR"),
+    },
+    Number(body.quantity ?? 1),
+    str(body.note)
+  )
+})
+
+route("get", API.wallet.giftCards, ({ query }) =>
+  paginate(mock.listGiftCards(), query)
+)
+
 // --- the sandbox bank (mock mode only) --------------------------------------
 //
 // Against a real platform the redirect goes to payment-service's /mock-bank/pay
@@ -430,20 +449,6 @@ route("get", API.mockBank.charge(":id"), ({ params }) => {
 route("post", API.mockBank.confirm(":id"), ({ params }) =>
   mock.settleCharge(params[0])
 )
-
-// Support issues gift cards (requirement 1.1). Not a wallet-service path a user
-// ever calls, so it lives under the same admin-ish umbrella as the mock-only
-// user list.
-route("post", API.wallet.issueGiftCard, ({ body }) => {
-  const amount = body.amount as
-    { amount_minor?: string; currency?: string } | undefined
-  return mock.issueGiftCard({
-    amount_minor: String(amount?.amount_minor ?? "0"),
-    currency: String(amount?.currency ?? "IRR"),
-  })
-})
-
-route("get", API.wallet.giftCards, () => ({ items: mock.listGiftCards() }))
 
 // --- notifications ---------------------------------------------------------
 

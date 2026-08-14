@@ -213,15 +213,26 @@ export interface MockCharge {
   settled: boolean
 }
 
+/**
+ * wallet-service's `GiftCardView`, field for field.
+ *
+ * It used to be `{amount, issued_at, status: USED}` — none of which the service returns.
+ * `code` is kept here because something has to redeem against it, but it is only ever
+ * *sent* in the response that mints the card, exactly as the service does: wallet stores
+ * a hash, so a listed card carries `code_hint` and nothing more.
+ */
 export interface MockGiftCard {
   id: string
   code: string
-  amount: Money
-  status: "ACTIVE" | "USED" | "REVOKED"
+  code_hint: string
+  value: Money
+  status: "ACTIVE" | "REDEEMED" | "REVOKED"
   issued_by: string
-  issued_at: string
+  batch_id: string
+  note: string
   redeemed_by?: string
-  redeemed_at?: string
+  redeemed_at?: string | null
+  created_at: string
 }
 
 // --- seeding ---------------------------------------------------------------
@@ -573,18 +584,26 @@ function initialStore(): Store {
       {
         id: "gc-seed-1",
         code: "ARCA-DIA1-GIFT",
-        amount: minor(50_000),
+        code_hint: "GIFT",
+        value: minor(50_000),
         status: "ACTIVE",
         issued_by: SUPPORT_ID,
-        issued_at: iso(-3 * 24 * 60),
+        batch_id: "batch-seed-1",
+        note: "Launch giveaway",
+        created_at: iso(-3 * 24 * 60),
+        redeemed_at: null,
       },
       {
         id: "gc-seed-2",
         code: "PLAY-MORE-2026",
-        amount: minor(120_000),
+        code_hint: "2026",
+        value: minor(120_000),
         status: "ACTIVE",
         issued_by: SUPPORT_ID,
-        issued_at: iso(-24 * 60),
+        batch_id: "batch-seed-1",
+        note: "Launch giveaway",
+        created_at: iso(-24 * 60),
+        redeemed_at: null,
       },
     ],
   }
@@ -967,7 +986,7 @@ export function redeemGiftCard(code: string): RedeemGiftCardResult {
   if (!card) {
     throw new MockRuleError(404, "GIFT_CARD_NOT_FOUND", "No such gift card")
   }
-  if (card.status === "USED") {
+  if (card.status === "REDEEMED") {
     throw new MockRuleError(
       409,
       "GIFT_CARD_ALREADY_USED",
@@ -977,52 +996,80 @@ export function redeemGiftCard(code: string): RedeemGiftCardResult {
   if (card.status === "REVOKED") {
     throw new MockRuleError(409, "GIFT_CARD_REVOKED", "That card was revoked")
   }
-  card.status = "USED"
+  card.status = "REDEEMED"
   card.redeemed_by = user.user_id
   card.redeemed_at = new Date().toISOString()
   const entry = credit(
     user.user_id,
-    card.amount,
+    card.value,
     "GIFT_CARD",
     card.id,
     "Gift card redeemed"
   )
   save()
   return {
-    credited: card.amount,
+    credited: card.value,
     wallet: walletOf(user.user_id),
     entry,
     idempotent_replay: false,
   }
 }
 
-/** Support issues a card; the code is shown once, as the service intends. */
-export function issueGiftCard(amount: Money): MockGiftCard {
+/**
+ * Support or Admin mints a batch. The codes come back here and never again — the same
+ * bargain the service makes, because it keeps only a hash of each one.
+ */
+export function issueGiftCards(
+  value: Money,
+  quantity: number,
+  note: string
+): {
+  batch_id: string
+  gift_cards: MockGiftCard[]
+  idempotent_replay: boolean
+} {
   requireRole("SUPPORT", "ADMIN")
-  if (parse(amount) <= 0n) {
+  if (parse(value) <= 0n) {
     throw new MockRuleError(
       400,
       "VALIDATION_FAILED",
       "The amount must be greater than zero"
     )
   }
-  const card: MockGiftCard = {
-    id: id("gc"),
-    code: giftCardCode(),
-    amount,
-    status: "ACTIVE",
-    issued_by: currentUser().user_id,
-    issued_at: new Date().toISOString(),
+  const count = Math.min(Math.max(Math.trunc(quantity) || 1, 1), 100)
+  const batchId = id("batch")
+  const issued: MockGiftCard[] = []
+
+  for (let index = 0; index < count; index += 1) {
+    const code = giftCardCode()
+    const card: MockGiftCard = {
+      id: id("gc"),
+      code,
+      code_hint: code.slice(-4),
+      value,
+      status: "ACTIVE",
+      issued_by: currentUser().user_id,
+      batch_id: batchId,
+      note,
+      created_at: new Date().toISOString(),
+      redeemed_at: null,
+    }
+    db.giftCards.unshift(card)
+    issued.push(card)
   }
-  db.giftCards.unshift(card)
   save()
-  return card
+  return { batch_id: batchId, gift_cards: issued, idempotent_replay: false }
 }
 
-/** Support's list. Codes are included because Support is who hands them out. */
+/**
+ * Support's list, **without** the codes.
+ *
+ * The service cannot return them — it holds a hash — so a mock that did would make the
+ * "copy these now, they are shown once" warning look like a lie the app tells.
+ */
 export function listGiftCards(): MockGiftCard[] {
   requireRole("SUPPORT", "ADMIN")
-  return db.giftCards
+  return db.giftCards.map((card) => ({ ...card, code: "" }))
 }
 
 function giftCardCode(): string {

@@ -79,3 +79,34 @@ export interface RedeemGiftCardResult {
   entry: LedgerEntry
   idempotent_replay: boolean
 }
+
+/** One card, exactly as wallet-service's `GiftCardView` is shaped. */
+export interface GiftCard {
+  id: string
+  /**
+   * The plaintext code, and **only** in the response that created it. Wallet stores a
+   * hash, so a card that is listed later carries an empty string here — there is
+   * nothing left to show. A replayed issuance is the same: the codes were never kept.
+   */
+  code?: string
+  /** The last few characters, for telling one issued card from another afterwards. */
+  code_hint: string
+  value: Money
+  status: GiftCardStatus
+  issued_by: string
+  batch_id?: string
+  note?: string
+  redeemed_by?: string
+  redeemed_at?: string | null
+  created_at: string
+}
+
+export type GiftCardStatus = "ACTIVE" | "REDEEMED" | "REVOKED"
+
+export interface IssueGiftCardsResult {
+  batch_id: string
+  gift_cards: GiftCard[]
+  /** True when this key had already been used. The codes come back empty — they were
+   *  revealed once, at issue time, and are not recoverable. */
+  idempotent_replay: boolean
+}

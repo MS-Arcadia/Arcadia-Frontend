@@ -7,6 +7,8 @@ import {
   getLedger,
   getWallet,
   initiateCharge,
+  getGiftCards,
+  issueGiftCards,
   redeemGiftCard,
   walletKeys,
 } from "@/api/wallet"
@@ -58,6 +60,38 @@ export function useRedeemGiftCardMutation() {
       toast.success(`${formatMoney(result.credited)} added`, {
         description: `New balance: ${formatMoney(result.wallet.balance)}`,
       })
+    },
+  })
+}
+
+/** Every card issued so far. Staff only — the service refuses anybody else. */
+export function useGiftCardsQuery(enabled = true) {
+  return useQuery({
+    queryKey: walletKeys.giftCards(),
+    queryFn: getGiftCards,
+    staleTime: 30 * 1000,
+    enabled,
+  })
+}
+
+/**
+ * Mint a batch of gift cards.
+ *
+ * The result is deliberately returned rather than swallowed: the plaintext codes exist
+ * only in this response, because wallet-service stores a hash. A caller that discards it
+ * has destroyed the cards it just paid to create.
+ */
+export function useIssueGiftCardsMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: issueGiftCards,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: walletKeys.giftCards() })
+      toast.success(
+        result.gift_cards.length === 1
+          ? "One gift card issued"
+          : `${result.gift_cards.length} gift cards issued`
+      )
     },
   })
 }
