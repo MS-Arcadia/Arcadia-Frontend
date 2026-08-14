@@ -257,11 +257,13 @@ route("get", API.catalog.games, ({ query }) => {
   const genre = query.get("genre")
   const state = query.get("state")
 
-  let games = db.games.filter(
-    (game) =>
-      (game.state === "PUBLISHED" || game.state === "PREORDER") &&
-      !game.withdrawn_at
-  )
+  let games = db.games
+    .filter(
+      (game) =>
+        (game.state === "PUBLISHED" || game.state === "PREORDER") &&
+        !game.withdrawn_at
+    )
+    .map((game) => mock.withLivePrice(game))
   if (state) games = games.filter((game) => game.state === state)
   if (genre) games = games.filter((game) => game.genres.includes(genre))
   if (search) {
@@ -288,21 +290,24 @@ route("get", API.catalog.games, ({ query }) => {
 
 // Declared before `/games/:id` — otherwise "mine" is matched as a game id.
 route("get", API.catalog.mine, () => {
-  const games = mock.myGames()
+  const games = mock.myGames().map((game) => mock.withLivePrice(game))
   return { items: games, total: games.length, limit: games.length, offset: 0 }
 })
 
-route("get", API.catalog.gameDetail(":id"), ({ params }) => ({
-  ...mock.gameById(params[0]),
-  reviews: mock.reviewsOf(params[0]),
-  promotions: mock.promotionsOf(params[0]),
-}))
+function gameDetail(gameId: string) {
+  const game = mock.withLivePrice(mock.gameById(gameId))
+  return {
+    ...game,
+    reviews: mock.reviewsOf(gameId),
+    promotions: mock.promotionsViewOf(gameId),
+  }
+}
 
-route("get", API.catalog.game(":id"), ({ params }) => ({
-  ...mock.gameById(params[0]),
-  reviews: mock.reviewsOf(params[0]),
-  promotions: mock.promotionsOf(params[0]),
-}))
+route("get", API.catalog.gameDetail(":id"), ({ params }) =>
+  gameDetail(params[0])
+)
+
+route("get", API.catalog.game(":id"), ({ params }) => gameDetail(params[0]))
 
 // `Page[OwnershipView]` — the ownership records alone, which is all catalog-service returns.
 // This used to answer `{ ownership, game }` pairs, and the library page read the game
@@ -389,21 +394,25 @@ route("post", API.catalog.relist(":id"), ({ params }) =>
 // No GET here: the real service has none — every promotions route answers with the
 // game, and `promotions` is a field on it (see the /detail route above). getPromotions
 // reads it from there now.
-route("post", API.catalog.promotions(":id"), ({ params, body }) =>
+route("post", API.catalog.promotions(":id"), ({ params, body }) => {
   mock.proposePromotion(
     params[0],
     Number(body.discount_bps ?? 0),
     str(body.starts_at, new Date().toISOString()),
     str(body.ends_at, new Date().toISOString()),
-    str(body.note)
+    str(body.note),
+    str(body.festival_id)
   )
-)
-route("post", API.catalog.approvePromotion(":id", ":pid"), ({ params }) =>
+  return gameDetail(params[0])
+})
+route("post", API.catalog.approvePromotion(":id", ":pid"), ({ params }) => {
   mock.decidePromotion(params[0], params[1], true)
-)
-route("post", API.catalog.rejectPromotion(":id", ":pid"), ({ params }) =>
+  return gameDetail(params[0])
+})
+route("post", API.catalog.rejectPromotion(":id", ":pid"), ({ params }) => {
   mock.decidePromotion(params[0], params[1], false)
-)
+  return gameDetail(params[0])
+})
 
 // --- orders ----------------------------------------------------------------
 

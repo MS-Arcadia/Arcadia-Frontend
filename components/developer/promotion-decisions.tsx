@@ -9,6 +9,7 @@ import {
   usePromotionsQuery,
 } from "@/queries/workflow"
 import { formatDate } from "@/lib/datetime"
+import { isAwaitingDeveloper } from "@/lib/promotion"
 
 interface Props {
   gameId: string
@@ -26,8 +27,8 @@ export function PromotionDecisions({ gameId }: Props) {
   const decide = useDecidePromotionMutation(gameId)
 
   const promotions = data?.items ?? []
-  const waiting = promotions.filter(
-    (promotion) => promotion.state === "PROPOSED"
+  const waiting = promotions.filter((promotion) =>
+    isAwaitingDeveloper(promotion.state)
   )
   const live = promotions.filter((promotion) => promotion.live)
 

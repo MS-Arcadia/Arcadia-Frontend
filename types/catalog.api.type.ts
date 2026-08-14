@@ -46,6 +46,7 @@ export interface Promotion {
   /** Basis points off. 2000 is 20%, 10000 makes the game free. */
   discount_bps: number
   percent_off: number
+  /** Catalog: PENDING | ACTIVE | REJECTED | CANCELLED */
   state: string
   starts_at: string
   ends_at: string

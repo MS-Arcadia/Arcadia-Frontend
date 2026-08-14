@@ -25,9 +25,11 @@ import { formatDate } from "@/lib/datetime"
 import { formatMoney } from "@/lib/money"
 import type { Game } from "@/types/catalog.api.type"
 import { gameArt } from "@/lib/game-art"
+import { cn } from "@/lib/utils"
 
 interface Props {
   game: Game
+  highlighted?: boolean
 }
 
 /** A build size that is plausible for a game, since there is no real upload here.
@@ -42,7 +44,7 @@ const PLACEHOLDER_SIZE = 4_200_000_000
  * to use. What is shown is derived from the state instead, which is why this reads
  * as a switch rather than a row of buttons.
  */
-export function DeveloperGameCard({ game }: Props) {
+export function DeveloperGameCard({ game, highlighted = false }: Props) {
   const art = gameArt(game.media)
 
   const addVersion = useAddVersionMutation()
@@ -77,7 +79,10 @@ export function DeveloperGameCard({ game }: Props) {
     // developer arrives at the card holding the decision rather than at their whole list.
     <article
       id={`game-${game.id}`}
-      className="scroll-mt-24 overflow-hidden rounded-xl border border-border bg-card target:ring-2 target:ring-primary/60"
+      className={cn(
+        "scroll-mt-24 overflow-hidden rounded-xl border border-border bg-card",
+        highlighted && "ring-2 ring-primary/60"
+      )}
     >
       <div className="flex gap-4 p-4">
         <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted">

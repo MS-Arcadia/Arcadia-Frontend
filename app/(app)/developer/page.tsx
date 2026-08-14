@@ -8,7 +8,7 @@ import { DeveloperGameCard } from "@/components/developer/developer-game-card"
 import { NewGameDialog } from "@/components/developer/new-game-dialog"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useMyGamesQuery } from "@/queries/workflow"
+import { useMyGamesQuery, usePendingPromotionIds } from "@/queries/workflow"
 import { useHasRole } from "@/stores/auth.store"
 import { formatNumber } from "@/lib/money"
 
@@ -29,20 +29,25 @@ export default function DeveloperPage() {
   // decision lives on this page, so the link brings them here and this puts them in
   // front of the right card instead of the top of a list.
   const focused = useSearchParams().get("game")
+  const games = data?.items ?? []
+  const selling = games.filter(
+    (game) => game.state === "PUBLISHED" || game.state === "PREORDER"
+  )
+  const { ids: awaitingDiscount, isPending: promotionsPending } =
+    usePendingPromotionIds(selling.map((game) => game.id))
   useEffect(() => {
-    if (!focused || isPending) return
+    if (!focused || isPending || promotionsPending) return
     document
       .getElementById(`game-${focused}`)
       ?.scrollIntoView({ behavior: "smooth", block: "center" })
-  }, [focused, isPending])
-
-  const games = data?.items ?? []
+  }, [focused, isPending, promotionsPending])
   const needsYou = games.filter(
     (game) =>
       game.state === "DRAFT" ||
       game.state === "APPROVED" ||
       game.state === "PRICED" ||
-      game.state === "REJECTED"
+      game.state === "REJECTED" ||
+      awaitingDiscount.has(game.id)
   )
   const withSupport = games.filter(
     (game) =>
@@ -50,9 +55,7 @@ export default function DeveloperPage() {
       game.state === "IN_REVIEW" ||
       game.state === "APPEALED"
   )
-  const selling = games.filter(
-    (game) => game.state === "PUBLISHED" || game.state === "PREORDER"
-  )
+  const onSale = selling.filter((game) => !awaitingDiscount.has(game.id))
 
   if (!isDeveloper) {
     return (
@@ -109,13 +112,23 @@ export default function DeveloperPage() {
         </div>
       )}
 
-      <Section title="Needs you" games={needsYou} />
+      <Section
+        title="Needs you"
+        description={
+          awaitingDiscount.size > 0
+            ? "Includes festival discounts waiting for your approval."
+            : undefined
+        }
+        games={needsYou}
+        focused={focused}
+      />
       <Section
         title="With Support"
         description="Waiting on a review decision. Nothing for you to do until it comes back."
         games={withSupport}
+        focused={focused}
       />
-      <Section title="On sale" games={selling} />
+      <Section title="On sale" games={onSale} focused={focused} />
 
       <NewGameDialog open={creating} onOpenChange={setCreating} />
     </div>
@@ -126,10 +139,12 @@ function Section({
   title,
   description,
   games,
+  focused,
 }: {
   title: string
   description?: string
   games: React.ComponentProps<typeof DeveloperGameCard>["game"][]
+  focused: string | null
 }) {
   if (games.length === 0) return null
 
@@ -143,7 +158,11 @@ function Section({
       </div>
       <div className="space-y-3">
         {games.map((game) => (
-          <DeveloperGameCard key={game.id} game={game} />
+          <DeveloperGameCard
+            key={game.id}
+            game={game}
+            highlighted={focused === game.id}
+          />
         ))}
       </div>
     </section>

@@ -1,4 +1,5 @@
 import { API } from "@/lib/api-paths"
+import { isAwaitingDeveloper } from "@/lib/promotion"
 import { http } from "@/services/http"
 import { mediaPublicUrl, uploadMedia } from "@/api/media"
 import type { Game, GameDetail, Promotion } from "@/types/catalog.api.type"
@@ -191,15 +192,34 @@ export interface ProposePromotionBody {
   note?: string
 }
 
+/**
+ * Catalog answers every promotions write with `GameDetailView`. The UI cares
+ * about the one promotion that just changed, so this pulls it out.
+ */
+function promotionFromDetail(
+  game: GameDetail,
+  match: (promotion: Promotion) => boolean
+): Promotion {
+  const found = game.promotions.find(match)
+  if (!found) {
+    throw new Error(
+      "Catalog returned the game without the promotion just written"
+    )
+  }
+  return found
+}
+
 export async function proposePromotion(
   gameId: string,
   body: ProposePromotionBody
 ): Promise<Promotion> {
-  const { data } = await http.post<Promotion>(
+  const { data } = await http.post<GameDetail>(
     API.catalog.promotions(gameId),
     body
   )
-  return data
+  return promotionFromDetail(data, (promotion) =>
+    isAwaitingDeveloper(promotion.state)
+  )
 }
 
 export async function decidePromotion(
@@ -211,6 +231,6 @@ export async function decidePromotion(
   const path = approve
     ? API.catalog.approvePromotion(gameId, promotionId)
     : API.catalog.rejectPromotion(gameId, promotionId)
-  const { data } = await http.post<Promotion>(path, { note })
-  return data
+  const { data } = await http.post<GameDetail>(path, { note })
+  return promotionFromDetail(data, (promotion) => promotion.id === promotionId)
 }

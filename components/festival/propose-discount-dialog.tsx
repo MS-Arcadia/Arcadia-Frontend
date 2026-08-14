@@ -46,7 +46,7 @@ interface Props {
 /**
  * Requirement 1.9's second half, Support's side: a proposal, not a discount.
  * `PromotionDecisions` on the developer's own page is where it actually gets
- * approved — this only creates the PROPOSED row, tied to this festival's
+ * approved — this only creates the PENDING row, tied to this festival's
  * window.
  */
 export function ProposeDiscountDialog({

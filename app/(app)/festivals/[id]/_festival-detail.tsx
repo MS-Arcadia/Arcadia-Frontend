@@ -15,6 +15,7 @@ import {
 
 import { FestivalStateBadge } from "@/components/festival/festival-state-badge"
 import { ProposeDiscountDialog } from "@/components/festival/propose-discount-dialog"
+import { PromotionDecisions } from "@/components/developer/promotion-decisions"
 import { RescheduleFestivalDialog } from "@/components/festival/reschedule-festival-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -44,9 +45,10 @@ import {
   useRemoveFestivalGameMutation,
   useStartFestivalMutation,
 } from "@/queries/festivals"
-import { useHasRole } from "@/stores/auth.store"
+import { useAuthStore, useHasRole } from "@/stores/auth.store"
 import { formatDateTime, formatRelative } from "@/lib/datetime"
 import { formatMoney, percentOff } from "@/lib/money"
+import { isAwaitingDeveloper } from "@/lib/promotion"
 import type {
   FestivalDetailView,
   FestivalGameView,
@@ -360,6 +362,7 @@ function FestivalGameRow({
   isStaff: boolean
   editable: boolean
 }) {
+  const isOwner = useAuthStore((state) => state.userId) === game.developer_id
   const remove = useRemoveFestivalGameMutation(festival.id)
   const [proposeOpen, setProposeOpen] = useState(false)
 
@@ -368,7 +371,7 @@ function FestivalGameRow({
   )
   const activePromotion = promotions.find((p) => p.state === "ACTIVE")
   const blocking = promotions.find(
-    (p) => p.state === "PROPOSED" || p.state === "ACTIVE"
+    (p) => isAwaitingDeveloper(p.state) || p.state === "ACTIVE"
   )
 
   return (
@@ -414,7 +417,17 @@ function FestivalGameRow({
         </div>
       )}
 
-      {isStaff && (
+      {!game.discounted_price &&
+        blocking &&
+        isAwaitingDeveloper(blocking.state) && (
+          <p className="text-xs text-muted-foreground">
+            {percentOff(blocking.discount_bps)}% off — waiting on the developer
+          </p>
+        )}
+
+      {isOwner && <PromotionDecisions gameId={game.game_id} />}
+
+      {isStaff && (!isOwner || !blocking) && (
         <div className="border-t border-border pt-3">
           {blocking ? (
             <PromotionStatus promotion={blocking} />
@@ -448,7 +461,7 @@ function FestivalGameRow({
 }
 
 function PromotionStatus({ promotion }: { promotion: PromotionSnapshotView }) {
-  if (promotion.state === "PROPOSED") {
+  if (isAwaitingDeveloper(promotion.state)) {
     return (
       <p className="flex items-center gap-1.5 text-xs text-warning">
         <Tag className="size-3.5" />

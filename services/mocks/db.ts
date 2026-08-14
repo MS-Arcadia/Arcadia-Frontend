@@ -1886,6 +1886,50 @@ export function promotionsOf(gameId: string): Promotion[] {
   return db.promotions[gameId] ?? []
 }
 
+export function promotionsViewOf(gameId: string): Promotion[] {
+  return promotionsOf(gameId).map((promotion) => ({
+    ...promotion,
+    live: promotionIsLive(promotion),
+  }))
+}
+
+function promotionIsLive(promotion: Promotion): boolean {
+  if (promotion.state !== "ACTIVE") return false
+  const now = Date.now()
+  return (
+    new Date(promotion.starts_at).getTime() <= now &&
+    now < new Date(promotion.ends_at).getTime()
+  )
+}
+
+/** What Catalog's GameView.of computes: largest live promotion, or the list price. */
+export function withLivePrice(game: Game): Game {
+  const live = promotionsOf(game.id)
+    .filter(promotionIsLive)
+    .reduce<Promotion | undefined>(
+      (best, candidate) =>
+        !best || candidate.discount_bps > best.discount_bps ? candidate : best,
+      undefined
+    )
+  if (!live || !game.final_price) {
+    return { ...game, discount_bps: 0, effective_price: game.final_price }
+  }
+  return {
+    ...game,
+    discount_bps: live.discount_bps,
+    effective_price: money(
+      parse(game.final_price) -
+        share(parse(game.final_price), live.discount_bps)
+    ),
+  }
+}
+
+function applyLivePrice(game: Game): void {
+  const priced = withLivePrice(game)
+  game.discount_bps = priced.discount_bps
+  game.effective_price = priced.effective_price
+}
+
 export function proposePromotion(
   gameId: string,
   discountBps: number,
@@ -1914,7 +1958,7 @@ export function proposePromotion(
     game_id: gameId,
     discount_bps: discountBps,
     percent_off: discountBps / 100,
-    state: "PROPOSED",
+    state: "PENDING",
     starts_at: startsAt,
     ends_at: endsAt,
     live: false,
@@ -1951,7 +1995,7 @@ export function decidePromotion(
     (candidate) => candidate.id === promotionId
   )
   if (!promotion) throw new MockRuleError(404, "NOT_FOUND", "No such promotion")
-  if (promotion.state !== "PROPOSED") {
+  if (promotion.state !== "PENDING") {
     throw new MockRuleError(
       409,
       "ALREADY_DECIDED",
@@ -1961,17 +2005,10 @@ export function decidePromotion(
 
   promotion.state = approve ? "ACTIVE" : "REJECTED"
   promotion.decided_by = user.user_id
-  promotion.live = approve
-  if (approve && game.final_price) {
-    game.discount_bps = promotion.discount_bps
-    game.effective_price = money(
-      parse(game.final_price) -
-        share(parse(game.final_price), promotion.discount_bps)
-    )
-  }
+  applyLivePrice(game)
   game.updated_at = iso()
   save()
-  return promotion
+  return { ...promotion, live: promotionIsLive(promotion) }
 }
 
 // --- users and roles -------------------------------------------------------
@@ -2942,6 +2979,11 @@ export function startFestival(festivalId: string): FestivalDetailView {
   }
   festival.state = "ACTIVE"
   festival.started_at = iso()
+
+  for (const listed of festival.games) {
+    const stored = db.games.find((candidate) => candidate.id === listed.game_id)
+    if (stored) applyLivePrice(stored)
+  }
 
   // Requirement 1.9: platform-wide. Every account is told, mirroring
   // festival-service's call to auth-profile-service for the full user directory.

@@ -1,10 +1,17 @@
 "use client"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { catalogKeys } from "@/api/catalog"
+import { festivalKeys } from "@/api/festivals"
 import { notificationKeys } from "@/api/notifications"
+import { isAwaitingDeveloper } from "@/lib/promotion"
 import {
   addVersion,
   appealRejection,
@@ -55,6 +62,34 @@ export function usePromotionsQuery(gameId: string) {
 }
 
 /**
+ * Which of these games have a discount waiting on the developer.
+ *
+ * `/games/mine` is `GameView` — no promotions — so the "Needs you" grouping
+ * has to ask for each published title. Same cache key as `PromotionDecisions`,
+ * so the panel on the card does not refetch.
+ */
+export function usePendingPromotionIds(gameIds: string[]) {
+  return useQueries({
+    queries: gameIds.map((id) => ({
+      queryKey: workflowKeys.promotions(id),
+      queryFn: () => getPromotions(id),
+      staleTime: 30 * 1000,
+      enabled: Boolean(id),
+    })),
+    combine: (results) => ({
+      ids: new Set(
+        gameIds.filter((id, index) =>
+          results[index]?.data?.items.some((promotion) =>
+            isAwaitingDeveloper(promotion.state)
+          )
+        )
+      ),
+      isPending: results.some((result) => result.isPending),
+    }),
+  })
+}
+
+/**
  * Everything a workflow step can change, invalidated together.
  *
  * A single transition can touch four caches: the developer's own list, the review
@@ -68,6 +103,7 @@ function useWorkflowInvalidation() {
     void client.invalidateQueries({ queryKey: workflowKeys.mine() })
     void client.invalidateQueries({ queryKey: workflowKeys.reviewQueue() })
     void client.invalidateQueries({ queryKey: catalogKeys.all })
+    void client.invalidateQueries({ queryKey: festivalKeys.all })
     void client.invalidateQueries({ queryKey: notificationKeys.all })
   }
 }
@@ -170,7 +206,9 @@ export function useDecidePromotionMutation(gameId: string) {
       })
       toast.success(
         promotion.state === "ACTIVE"
-          ? `${promotion.percent_off}% discount is live`
+          ? promotion.live
+            ? `${promotion.percent_off}% discount is live`
+            : `${promotion.percent_off}% discount approved`
           : "Discount declined"
       )
     },
