@@ -241,9 +241,23 @@ function ReviewCard({ game }: { game: Game }) {
                   size="sm"
                   className="min-h-9"
                   disabled={busy}
-                  onClick={() =>
-                    approve.mutate({ gameId: game.id, note: note.trim() })
-                  }
+                  onClick={() => {
+                    void (async () => {
+                      // Persist the suggestion before Approve, otherwise the card
+                      // leaves the queue and the developer never sees a price.
+                      if (price) {
+                        try {
+                          await suggest.mutateAsync({
+                            gameId: game.id,
+                            amountMinor: Number(price) * 100,
+                          })
+                        } catch {
+                          return
+                        }
+                      }
+                      approve.mutate({ gameId: game.id, note: note.trim() })
+                    })()
+                  }}
                 >
                   {approve.isPending ? (
                     <Loader2 className="size-3.5 animate-spin" />

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { MediaImage } from "@/components/media-image"
-import { Loader2, Send, Upload } from "lucide-react"
+import { Check, Loader2, Send, Upload } from "lucide-react"
 
 import { GameStateBadge } from "@/components/game/game-state-badge"
 import { PromotionDecisions } from "@/components/developer/promotion-decisions"
@@ -55,6 +55,7 @@ export function DeveloperGameCard({ game }: Props) {
   const [price, setPriceInput] = useState("")
   const [version, setVersion] = useState("")
   const [appealNote, setAppealNote] = useState("")
+  const [ownPrice, setOwnPrice] = useState(false)
 
   const busy =
     addVersion.isPending ||
@@ -261,66 +262,117 @@ export function DeveloperGameCard({ game }: Props) {
 
         {(game.state === "APPROVED" || game.state === "PRICED") && (
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Approved. The price is yours to set — Support can suggest one, but
-              it does not bind you.
-              {game.suggested_price && (
-                <>
-                  {" "}
-                  They suggested{" "}
-                  <span className="text-foreground tabular">
-                    {formatMoney(game.suggested_price)}
-                  </span>
+            {game.suggested_price && game.final_price === null && !ownPrice ? (
+              <>
+                <div className="flex flex-wrap items-center gap-3 rounded-lg border border-warning/25 bg-warning/5 p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium">
+                      Support suggested{" "}
+                      <span className="tabular">
+                        {formatMoney(game.suggested_price)}
+                      </span>
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      You can take that price or set a different one. The
+                      suggestion does not bind you.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Button
+                      size="sm"
+                      className="min-h-9"
+                      disabled={busy}
+                      onClick={() => {
+                        const suggested = game.suggested_price
+                        if (!suggested) return
+                        setPrice.mutate({
+                          gameId: game.id,
+                          amountMinor: Number(suggested.amount_minor),
+                        })
+                      }}
+                    >
+                      {setPrice.isPending ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <Check className="size-3.5" />
+                      )}
+                      Use this price
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-h-9"
+                      disabled={busy}
+                      onClick={() => setOwnPrice(true)}
+                    >
+                      Set a different price
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Approved. The price is yours to set
+                  {game.suggested_price && (
+                    <>
+                      {" "}
+                      — Support suggested{" "}
+                      <span className="text-foreground tabular">
+                        {formatMoney(game.suggested_price)}
+                      </span>
+                    </>
+                  )}
                   .
-                </>
-              )}
-            </p>
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="min-w-32 flex-1 space-y-1.5">
-                <Label htmlFor={`price-${game.id}`} className="text-xs">
-                  Price
-                </Label>
-                <Input
-                  id={`price-${game.id}`}
-                  inputMode="numeric"
-                  value={price}
-                  onChange={(event) =>
-                    setPriceInput(event.target.value.replace(/[^\d]/g, ""))
-                  }
-                  placeholder={game.final_price ? "" : "550000"}
-                  className="min-h-9 tabular"
-                />
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="min-h-9"
-                disabled={busy || !price}
-                onClick={() =>
-                  setPrice.mutate(
-                    { gameId: game.id, amountMinor: Number(price) * 100 },
-                    { onSuccess: () => setPriceInput("") }
-                  )
-                }
-              >
-                Set price
-              </Button>
-              <Button
-                size="sm"
-                className="min-h-9"
-                disabled={busy || game.final_price === null}
-                onClick={() => publish.mutate(game.id)}
-              >
-                {publish.isPending && (
-                  <Loader2 className="size-3.5 animate-spin" />
+                </p>
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="min-w-32 flex-1 space-y-1.5">
+                    <Label htmlFor={`price-${game.id}`} className="text-xs">
+                      Price
+                    </Label>
+                    <Input
+                      id={`price-${game.id}`}
+                      inputMode="numeric"
+                      value={price}
+                      onChange={(event) =>
+                        setPriceInput(event.target.value.replace(/[^\d]/g, ""))
+                      }
+                      placeholder={game.final_price ? "" : "550000"}
+                      className="min-h-9 tabular"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-h-9"
+                    disabled={busy || !price}
+                    onClick={() =>
+                      setPrice.mutate(
+                        { gameId: game.id, amountMinor: Number(price) * 100 },
+                        { onSuccess: () => setPriceInput("") }
+                      )
+                    }
+                  >
+                    Set price
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="min-h-9"
+                    disabled={busy || game.final_price === null}
+                    onClick={() => publish.mutate(game.id)}
+                  >
+                    {publish.isPending && (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    )}
+                    Publish
+                  </Button>
+                </div>
+                {game.final_price === null && (
+                  <p className="text-xs text-muted-foreground/70">
+                    Publishing needs a price first — the catalog refuses otherwise.
+                  </p>
                 )}
-                Publish
-              </Button>
-            </div>
-            {game.final_price === null && (
-              <p className="text-xs text-muted-foreground/70">
-                Publishing needs a price first — the catalog refuses otherwise.
-              </p>
+              </>
             )}
           </div>
         )}
