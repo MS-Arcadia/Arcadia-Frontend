@@ -149,11 +149,18 @@ export async function suggestPrice(
 
 // --- promotions: Support proposes, the developer decides -------------------
 
+/**
+ * The service has no `GET .../promotions` — every promotions route answers with
+ * `GameDetailView`, and `promotions` is a field on it. Calling the path this used to
+ * call answered 405, so the developer's "waiting for your approval" panel could never
+ * load anything, no matter what the notification linked to.
+ */
 export async function getPromotions(gameId: string): Promise<Page<Promotion>> {
-  const { data } = await http.get<Page<Promotion>>(
-    API.catalog.promotions(gameId)
+  const { data } = await http.get<{ promotions: Promotion[] }>(
+    API.catalog.gameDetail(gameId)
   )
-  return data
+  const items = data.promotions ?? []
+  return { items, total: items.length, limit: items.length, offset: 0 }
 }
 
 export interface ProposePromotionBody {

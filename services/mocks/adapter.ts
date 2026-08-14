@@ -315,10 +315,9 @@ route("post", API.catalog.relist(":id"), ({ params }) =>
   mock.relistGame(params[0])
 )
 
-route("get", API.catalog.promotions(":id"), ({ params }) => {
-  const items = mock.promotionsOf(params[0])
-  return { items, total: items.length, limit: items.length, offset: 0 }
-})
+// No GET here: the real service has none — every promotions route answers with the
+// game, and `promotions` is a field on it (see the /detail route above). getPromotions
+// reads it from there now.
 route("post", API.catalog.promotions(":id"), ({ params, body }) =>
   mock.proposePromotion(
     params[0],
