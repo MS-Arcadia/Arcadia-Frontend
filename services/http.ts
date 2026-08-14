@@ -133,6 +133,10 @@ const MESSAGES: Record<string, string> = {
   ALREADY_OWNED: "This game is already in your library.",
   NOT_FOR_SALE: "This game is not on sale right now.",
   REFUND_WINDOW_CLOSED: "The 12-hour refund window has closed.",
+  GIFT_NOT_REFUNDABLE: "A gift cannot be refunded.",
+  ALREADY_REFUNDED: "This order has already been refunded.",
+  REFUND_IN_PROGRESS: "A refund for this order is already in progress.",
+  ORDER_NOT_COMPLETED: "This order cannot be refunded.",
   DISCOUNT_CODE_INVALID: "That discount code is not valid.",
   DISCOUNT_CODE_SPENT: "That discount code has already been used.",
   PAYMENT_GATEWAY_UNAUTHORIZED:

@@ -12,15 +12,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { RefundButton } from "@/components/order/refund-button"
 import {
   useBuyGameMutation,
   useGiftGameMutation,
   useInstalmentOrderMutation,
+  useOrdersQuery,
   usePreorderMutation,
 } from "@/queries/orders"
 import { useRecipientSuggestQuery } from "@/queries/auth"
 import { useWalletQuery } from "@/queries/wallet"
+import { timeUntil } from "@/lib/datetime"
 import { formatMoney, isFree, minorToMoney } from "@/lib/money"
+import { refundableOrderForGame } from "@/lib/order-refund"
 import { cn } from "@/lib/utils"
 import type { RecipientSuggestion } from "@/api/auth"
 import type { Game } from "@/types/catalog.api.type"
@@ -51,10 +55,13 @@ const PLAN_OPTIONS = [3, 4, 6] as const
  */
 export function AcquirePanel({ game, owned, defaultIntent }: Props) {
   const { data: wallet } = useWalletQuery()
+  const { data: orders } = useOrdersQuery(owned)
   const buy = useBuyGameMutation()
   const gift = useGiftGameMutation()
   const instalment = useInstalmentOrderMutation()
   const reserve = usePreorderMutation()
+  const refundable = refundableOrderForGame(orders?.items, game.id)
+  const refundLeft = refundable ? timeUntil(refundable.refundable_until) : null
 
   const [recipient, setRecipient] = useState("")
   const [picked, setPicked] = useState<RecipientSuggestion | null>(null)
@@ -100,23 +107,31 @@ export function AcquirePanel({ game, owned, defaultIntent }: Props) {
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       {owned && (
-        <p
-          className={cn(
-            "flex items-center gap-2 text-sm font-medium",
-            giftOnly && "mb-4"
-          )}
-        >
+        <p className="flex items-center gap-2 text-sm font-medium">
           <Check className="size-4 text-brand-sky" />
           This game is in your library
         </p>
       )}
 
+      {refundable && refundLeft && (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            {refundLeft} left to change your mind
+          </p>
+          <RefundButton
+            order={refundable}
+            size="default"
+            className="min-h-11 w-full"
+          />
+        </div>
+      )}
+
       {owned && preorder ? (
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-3 text-xs text-muted-foreground">
           A pre-order cannot be sent as a gift — it lands weeks later.
         </p>
       ) : (
-        <Tabs defaultValue={defaultTab}>
+        <Tabs defaultValue={defaultTab} className={owned ? "mt-4" : undefined}>
           {!giftOnly && (
             <TabsList className="w-full">
               <TabsTrigger value="buy" className="flex-1">

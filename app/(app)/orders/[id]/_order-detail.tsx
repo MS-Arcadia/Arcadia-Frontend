@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, Check, Clock, Loader2, RotateCcw } from "lucide-react"
+import { ArrowLeft, Check, Clock, Loader2 } from "lucide-react"
 
+import { RefundButton } from "@/components/order/refund-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -11,11 +12,11 @@ import {
   useInstalmentPlanQuery,
   useOrderQuery,
   usePayNextInstalmentMutation,
-  useRefundMutation,
 } from "@/queries/orders"
 import { formatDate, formatDateTime, timeUntil } from "@/lib/datetime"
 import { formatMoney } from "@/lib/money"
 import { isReceivedGift } from "@/lib/order-gift"
+import { isRefundable } from "@/lib/order-refund"
 import { cn } from "@/lib/utils"
 import type { InstalmentState } from "@/types/order.api.type"
 
@@ -31,7 +32,6 @@ export function OrderDetail({ id }: { id: string }) {
   const { data: order, isPending, isError } = useOrderQuery(id)
   const isPlan = order?.type === "INSTALMENT"
   const { data: plan } = useInstalmentPlanQuery(isPlan ? id : "")
-  const refund = useRefundMutation()
   const payNext = usePayNextInstalmentMutation()
 
   if (isPending) {
@@ -59,8 +59,8 @@ export function OrderDetail({ id }: { id: string }) {
     )
   }
 
-  const left = timeUntil(order.refundable_until)
-  const refundable = order.state === "COMPLETED" && left !== null
+  const refundable = isRefundable(order)
+  const left = refundable ? timeUntil(order.refundable_until) : null
   const nextDue = plan?.instalments.find((item) => item.state !== "PAID")
   const received = isReceivedGift(order, me?.user_id)
 
@@ -234,20 +234,7 @@ export function OrderDetail({ id }: { id: string }) {
               library.
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="min-h-11"
-            disabled={refund.isPending}
-            onClick={() => refund.mutate(order.id)}
-          >
-            {refund.isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <RotateCcw className="size-4" />
-            )}
-            Refund
-          </Button>
+          <RefundButton order={order} className="min-h-11" />
         </div>
       )}
     </div>

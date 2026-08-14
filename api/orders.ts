@@ -85,9 +85,27 @@ export async function placeInstalmentOrder(
   return settleOrder(data)
 }
 
+/**
+ * The refund endpoint answers `REFUNDING`, not `REFUNDED` — the commands are
+ * out, the wallet has not confirmed yet. Waiting here is what keeps the toast
+ * from claiming the money is back while it is still in flight.
+ */
+async function settleRefund(order: Order, ms = 20_000): Promise<Order> {
+  if (order.state !== "REFUNDING") return order
+  const deadline = Date.now() + ms
+  let delay = 200
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, delay))
+    const next = await getOrder(order.id)
+    if (next.state !== "REFUNDING") return next
+    delay = Math.min(Math.round(delay * 1.4), 1000)
+  }
+  return getOrder(order.id)
+}
+
 export async function refundOrder(id: string): Promise<Order> {
   const { data } = await http.post<Order>(API.orders.refund(id))
-  return data
+  return settleRefund(data)
 }
 
 export async function getInstalmentPlan(

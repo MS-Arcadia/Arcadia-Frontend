@@ -8,7 +8,8 @@
  *  - buying debits the wallet, and fails when the balance is short
  *  - buying twice is refused, because the library already holds it
  *  - a purchase writes a ledger entry and a notification, like the real fan-out
- *  - a refund is refused once the twelve-hour window has closed
+ *  - a refund is refused once the twelve-hour window has closed, and a gift
+ *    cannot be refunded at all — the game is already in somebody else's library
  *  - `effective_price` is derived from a live promotion, never stored twice
  *  - the publishing workflow is a state machine, and an illegal transition is a
  *    409 rather than a silent no-op
@@ -1187,7 +1188,9 @@ function newOrder(
     completed_at: state === "COMPLETED" ? iso() : null,
     refunded_at: null,
     refundable_until:
-      state === "COMPLETED" ? iso(REFUND_WINDOW_HOURS * 60) : null,
+      state === "COMPLETED" && type !== "GIFT"
+        ? iso(REFUND_WINDOW_HOURS * 60)
+        : null,
     cancellable: state === "RESERVED",
     saga: null,
     idempotent_replay: false,
@@ -1303,15 +1306,22 @@ export function refund(orderId: string): Order {
   if (!order || order.buyer_id !== user.user_id) {
     throw new MockRuleError(404, "NOT_FOUND", "No such order")
   }
-  if (order.state !== "COMPLETED") {
+  if (order.gift) {
     throw new MockRuleError(
       409,
-      "NOT_REFUNDABLE",
+      "GIFT_NOT_REFUNDABLE",
+      "A gift cannot be refunded"
+    )
+  }
+  if (order.state !== "COMPLETED" && order.state !== "PAYING") {
+    throw new MockRuleError(
+      409,
+      "ORDER_NOT_COMPLETED",
       "This order cannot be refunded"
     )
   }
   if (
-    order.refundable_until &&
+    !order.refundable_until ||
     new Date(order.refundable_until).getTime() < Date.now()
   ) {
     throw new MockRuleError(
@@ -1321,15 +1331,25 @@ export function refund(orderId: string): Order {
     )
   }
 
+  const plan = db.plans.find((candidate) => candidate.order_id === order.id)
+  // An instalment refunds what was collected, not the full price — otherwise
+  // a buyer one payment in would be handed money the platform never took.
+  const amount =
+    order.state === "PAYING" && plan ? plan.paid : order.total_charged
   credit(
     user.user_id,
-    order.total_charged,
+    amount,
     "REFUND",
     order.id,
     `Refund for ${order.game_title}`
   )
   order.state = "REFUNDED"
   order.refunded_at = iso()
+
+  if (plan && plan.state === "PAYING") {
+    plan.state = "CANCELLED"
+    plan.next_due_at = null
+  }
 
   for (const ownership of db.ownerships.filter(
     (entry) => entry.order_id === order.id
@@ -1390,7 +1410,8 @@ export function startInstalmentPlan(
     money(total)
   )
   order.completed_at = null
-  order.refundable_until = null
+  // Same twelve-hour window as a full purchase, measured from the first payment.
+  order.refundable_until = iso(REFUND_WINDOW_HOURS * 60)
   db.orders.unshift(order)
   grant(user.user_id, game, order.id)
 

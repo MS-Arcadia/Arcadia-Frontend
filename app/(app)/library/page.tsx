@@ -12,13 +12,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { RefundButton } from "@/components/order/refund-button"
 import { useLibraryQuery, useOwnedGamesQuery } from "@/queries/catalog"
+import { useOrdersQuery } from "@/queries/orders"
 import { formatDate } from "@/lib/datetime"
 import { formatNumber } from "@/lib/money"
 import { gameArt } from "@/lib/game-art"
+import { isRefundable } from "@/lib/order-refund"
 
 export default function LibraryPage() {
   const { data, isPending: libraryPending } = useLibraryQuery()
+  const { data: orders } = useOrdersQuery()
   const entries = data?.items ?? []
 
   // The library answers ownership records, not games — no title, no art, just `game_id`.
@@ -77,6 +81,11 @@ export default function LibraryPage() {
           const game = games.get(ownership.game_id)
           if (!game) return null
           const art = gameArt(game.media)
+          const order = orders?.items.find(
+            (candidate) => candidate.id === ownership.order_id
+          )
+          const refundable =
+            !ownership.gifted_by && order && isRefundable(order)
           return (
             <article
               key={ownership.id}
@@ -110,7 +119,7 @@ export default function LibraryPage() {
                   Added {formatDate(ownership.granted_at)}
                 </p>
 
-                <div className="mt-auto flex items-center gap-2 pt-2">
+                <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
                   {/* Disabled with a reason rather than wired to nothing. The
                       download comes from the media service, which signs its own
                       URLs and is not part of the mock — a button that looked live
@@ -142,6 +151,7 @@ export default function LibraryPage() {
                   >
                     Details
                   </Button>
+                  {refundable && order && <RefundButton order={order} />}
                 </div>
               </div>
             </article>

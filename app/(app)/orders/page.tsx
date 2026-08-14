@@ -1,16 +1,18 @@
 "use client"
 
 import Link from "next/link"
-import { Loader2, Receipt, RotateCcw } from "lucide-react"
+import { Receipt } from "lucide-react"
 
+import { RefundButton } from "@/components/order/refund-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useMeQuery } from "@/queries/auth"
-import { useOrdersQuery, useRefundMutation } from "@/queries/orders"
+import { useOrdersQuery } from "@/queries/orders"
 import { formatDateTime, timeUntil } from "@/lib/datetime"
 import { formatMoney } from "@/lib/money"
 import { isReceivedGift } from "@/lib/order-gift"
+import { isRefundable } from "@/lib/order-refund"
 import { cn } from "@/lib/utils"
 import type { OrderState, OrderType } from "@/types/order.api.type"
 
@@ -55,7 +57,6 @@ const TONE = {
 export default function OrdersPage() {
   const { data: me } = useMeQuery()
   const { data, isPending } = useOrdersQuery()
-  const refund = useRefundMutation()
   const orders = data?.items ?? []
 
   return (
@@ -91,8 +92,8 @@ export default function OrdersPage() {
       <ul className="space-y-3">
         {orders.map((order) => {
           const state = STATE[order.state]
-          const left = timeUntil(order.refundable_until)
-          const refundable = order.state === "COMPLETED" && left !== null
+          const refundable = isRefundable(order)
+          const left = refundable ? timeUntil(order.refundable_until) : null
           const received = isReceivedGift(order, me?.user_id)
 
           return (
@@ -157,20 +158,7 @@ export default function OrdersPage() {
 
               {refundable && (
                 <div className="mt-3 border-t border-border pt-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="min-h-9 gap-1.5"
-                    disabled={refund.isPending}
-                    onClick={() => refund.mutate(order.id)}
-                  >
-                    {refund.isPending ? (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    ) : (
-                      <RotateCcw className="size-3.5" />
-                    )}
-                    Refund
-                  </Button>
+                  <RefundButton order={order} className="min-h-9" />
                 </div>
               )}
             </li>

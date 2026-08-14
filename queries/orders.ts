@@ -19,11 +19,12 @@ import {
 } from "@/api/orders"
 import { walletKeys } from "@/api/wallet"
 
-export function useOrdersQuery() {
+export function useOrdersQuery(enabled = true) {
   return useQuery({
     queryKey: orderKeys.list(),
     queryFn: getOrders,
     staleTime: 30 * 1000,
+    enabled,
   })
 }
 
@@ -165,6 +166,16 @@ export function useRefundMutation() {
     mutationFn: refundOrder,
     onSuccess: (order) => {
       invalidate()
+      if (order.state === "REFUNDED") {
+        toast.success(`${order.game_title} refunded`, {
+          description: "The money is back in your wallet.",
+        })
+        return
+      }
+      if (order.state === "REFUNDING") {
+        toast.message(`${order.game_title} refund is processing`)
+        return
+      }
       toast.success(`${order.game_title} refunded`)
     },
   })
