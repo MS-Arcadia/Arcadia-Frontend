@@ -284,6 +284,22 @@ route("post", API.catalog.versions(":id"), ({ params, body }) =>
   )
 )
 
+route("post", API.media.upload, ({ body }) => {
+  const file = body.file
+  if (!(file instanceof File)) {
+    throw new MockRuleError(400, "MEDIA_EMPTY", "the uploaded file is empty")
+  }
+  return mock.uploadMedia(file, str(body.kind, "IMAGE"), str(body.reference_id))
+})
+
+route("post", API.catalog.media(":id"), ({ params, body }) =>
+  mock.addGameMedia(
+    params[0],
+    str(body.kind, "TEASER") === "IMAGE" ? "IMAGE" : "TEASER",
+    str(body.media_ref)
+  )
+)
+
 route("post", API.catalog.submit(":id"), ({ params }) =>
   mock.submitGame(params[0])
 )
@@ -888,6 +904,8 @@ const adapter: AxiosAdapter = async (config: InternalAxiosRequestConfig) => {
     body.files = form
       .getAll("files")
       .filter((entry): entry is File => entry instanceof File)
+    const single = form.get("file")
+    if (single instanceof File) body.file = single
   } else if (config.data && typeof config.data === "object") {
     body = config.data as Record<string, unknown>
   }

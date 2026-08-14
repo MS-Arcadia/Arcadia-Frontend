@@ -1594,19 +1594,57 @@ export function registerGame(input: {
     withdrawal_reason: "",
     release_at: null,
     versions: [],
-    media: [
-      {
-        id: id("med"),
-        kind: "TEASER",
-        media_ref: "/covers/paper-kingdoms.svg",
-        position: 0,
-      },
-    ],
+    media: [],
     created_at: iso(),
     updated_at: iso(),
     published_at: null,
   }
   db.games.unshift(game)
+  save()
+  return game
+}
+
+export function uploadMedia(file: File, kind: string, referenceId: string) {
+  const user = currentUser()
+  const mediaId = id("med")
+  const url = file.type.startsWith("image/")
+    ? URL.createObjectURL(file)
+    : `/media/${mediaId}`
+  return {
+    id: mediaId,
+    kind,
+    url,
+    content_type: file.type,
+    size_bytes: file.size,
+    filename: file.name,
+    owner_id: user.user_id,
+    visibility: "PUBLIC",
+    reference_id: referenceId,
+  }
+}
+
+export function addGameMedia(
+  gameId: string,
+  kind: "TEASER" | "IMAGE",
+  mediaRef: string
+): Game {
+  requireRole("DEVELOPER")
+  const game = ownGame(gameId)
+  if (kind === "TEASER" && game.media.some((item) => item.kind === "TEASER")) {
+    throw new MockRuleError(
+      409,
+      "TEASER_EXISTS",
+      "this game already has a teaser; remove it first"
+    )
+  }
+  game.media.push({
+    id: id("med"),
+    kind,
+    media_ref: mediaRef,
+    position: game.media.length,
+  })
+  if (kind === "TEASER") game.teaser_ref = mediaRef
+  game.updated_at = iso()
   save()
   return game
 }

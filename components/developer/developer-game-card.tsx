@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import Link from "next/link"
 import { MediaImage } from "@/components/media-image"
 import { Check, Loader2, Send, Upload } from "lucide-react"
@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import {
   useAddVersionMutation,
   useAppealMutation,
+  useAttachCoverMutation,
   usePublishGameMutation,
   useRelistGameMutation,
   useSetPriceMutation,
@@ -45,6 +46,7 @@ export function DeveloperGameCard({ game }: Props) {
   const art = gameArt(game.media)
 
   const addVersion = useAddVersionMutation()
+  const attachCover = useAttachCoverMutation()
   const submit = useSubmitGameMutation()
   const setPrice = useSetPriceMutation()
   const publish = usePublishGameMutation()
@@ -56,9 +58,11 @@ export function DeveloperGameCard({ game }: Props) {
   const [version, setVersion] = useState("")
   const [appealNote, setAppealNote] = useState("")
   const [ownPrice, setOwnPrice] = useState(false)
+  const coverInputRef = useRef<HTMLInputElement>(null)
 
   const busy =
     addVersion.isPending ||
+    attachCover.isPending ||
     submit.isPending ||
     setPrice.isPending ||
     publish.isPending ||
@@ -157,6 +161,41 @@ export function DeveloperGameCard({ game }: Props) {
               A game needs a build before it can be reviewed — there is nothing
               to look at otherwise, and the catalog refuses the submission.
             </p>
+            {!art && (
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) {
+                      attachCover.mutate({ gameId: game.id, file })
+                    }
+                    event.target.value = ""
+                  }}
+                />
+                <p className="flex-1 text-xs text-warning">
+                  No cover yet. The store will show a blank card without one.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-h-9"
+                  disabled={busy}
+                  onClick={() => coverInputRef.current?.click()}
+                >
+                  {attachCover.isPending ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="size-3.5" />
+                  )}
+                  Add cover
+                </Button>
+              </div>
+            )}
             <div className="flex flex-wrap items-end gap-2">
               <div className="min-w-32 flex-1 space-y-1.5">
                 <Label htmlFor={`version-${game.id}`} className="text-xs">

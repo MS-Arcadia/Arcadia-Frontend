@@ -9,6 +9,7 @@ import {
   addVersion,
   appealRejection,
   approveGame,
+  attachCover,
   decidePromotion,
   getMyGames,
   getPromotions,
@@ -89,8 +90,17 @@ function useWorkflowMutation<TArgs, TResult>(
 
 export function useRegisterGameMutation() {
   return useWorkflowMutation(
-    (body: RegisterGameBody) => registerGame(body),
+    ({ cover, ...body }: RegisterGameBody & { cover?: File }) =>
+      registerGame(body, cover),
     (game) => `${game.title} created as a draft`
+  )
+}
+
+export function useAttachCoverMutation() {
+  return useWorkflowMutation(
+    (args: { gameId: string; file: File }) =>
+      attachCover(args.gameId, args.file),
+    (game) => `Cover added to ${game.title}`
   )
 }
 

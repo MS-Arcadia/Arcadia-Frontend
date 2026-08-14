@@ -1,9 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 
+import { CoverField } from "@/components/developer/cover-field"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -25,6 +27,8 @@ interface Props {
 
 export function NewGameDialog({ open, onOpenChange }: Props) {
   const create = useRegisterGameMutation()
+  const [cover, setCover] = useState<File | null>(null)
+  const [coverError, setCoverError] = useState("")
   const form = useForm<NewGameForm>({
     resolver: zodResolver(newGameSchema),
     defaultValues: {
@@ -35,8 +39,20 @@ export function NewGameDialog({ open, onOpenChange }: Props) {
     },
   })
 
+  function reset() {
+    form.reset()
+    setCover(null)
+    setCoverError("")
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next)
+        if (!next) reset()
+      }}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Register a game</DialogTitle>
@@ -49,7 +65,11 @@ export function NewGameDialog({ open, onOpenChange }: Props) {
         <form
           id="new-game"
           noValidate
-          onSubmit={form.handleSubmit((values) =>
+          onSubmit={form.handleSubmit((values) => {
+            if (!cover) {
+              setCoverError("A cover image is required")
+              return
+            }
             create.mutate(
               {
                 title: values.title,
@@ -59,15 +79,16 @@ export function NewGameDialog({ open, onOpenChange }: Props) {
                   .split(",")
                   .map((genre) => genre.trim())
                   .filter(Boolean),
+                cover,
               },
               {
                 onSuccess: () => {
-                  form.reset()
+                  reset()
                   onOpenChange(false)
                 },
               }
             )
-          )}
+          })}
           className="space-y-4"
         >
           <div className="space-y-2">
@@ -100,6 +121,16 @@ export function NewGameDialog({ open, onOpenChange }: Props) {
               </p>
             )}
           </div>
+
+          <CoverField
+            id="cover"
+            file={cover}
+            onFileChange={(file) => {
+              setCover(file)
+              setCoverError("")
+            }}
+            error={coverError}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="minRequirements">What it needs to run</Label>

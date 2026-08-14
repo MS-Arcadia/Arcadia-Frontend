@@ -1,5 +1,6 @@
 import { API } from "@/lib/api-paths"
 import { http } from "@/services/http"
+import { uploadMedia } from "@/api/media"
 import type { Game, GameDetail, Promotion } from "@/types/catalog.api.type"
 import type { Page } from "@/types/common.api.type"
 
@@ -37,9 +38,30 @@ export interface RegisterGameBody {
 }
 
 export async function registerGame(
-  body: RegisterGameBody
+  body: RegisterGameBody,
+  cover?: File
 ): Promise<GameDetail> {
   const { data } = await http.post<GameDetail>(API.catalog.games, body)
+  if (!cover) return data
+  return attachCover(data.id, cover)
+}
+
+/** Bytes go to media-service; catalog keeps the public URL as the teaser. */
+export async function attachCover(
+  gameId: string,
+  file: File
+): Promise<GameDetail> {
+  const uploaded = await uploadMedia(file, {
+    kind: "IMAGE",
+    referenceId: gameId,
+  })
+  const origin = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "")
+  const mediaRef =
+    uploaded.url || `${origin}/media/v1/media/${uploaded.id}/content`
+  const { data } = await http.post<GameDetail>(API.catalog.media(gameId), {
+    kind: "TEASER",
+    media_ref: mediaRef,
+  })
   return data
 }
 

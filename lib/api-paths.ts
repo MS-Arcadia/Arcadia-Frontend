@@ -62,6 +62,7 @@ export const API = {
     withdraw: (id: string) => `/catalog/v1/games/${id}/withdraw`,
     relist: (id: string) => `/catalog/v1/games/${id}/relist`,
     openPreorders: (id: string) => `/catalog/v1/games/${id}/preorders`,
+    media: (id: string) => `/catalog/v1/games/${id}/media`,
 
     promotions: (id: string) => `/catalog/v1/games/${id}/promotions`,
     approvePromotion: (id: string, promotionId: string) =>
@@ -187,5 +188,8 @@ export const API = {
       `/recommendations/v1/users/${userId}/recommendations`,
     /** Public — no auth required, same as a catalog listing. */
     similar: (gameId: string) => `/recommendations/v1/games/${gameId}/similar`,
+  },
+  media: {
+    upload: "/media/v1/media",
   },
 } as const
