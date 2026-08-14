@@ -1,7 +1,7 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
+import { MediaImage } from "@/components/media-image"
 import { ArrowLeft, CalendarClock, Monitor } from "lucide-react"
 
 import { PriceTag } from "@/components/game/price-tag"
@@ -80,12 +80,11 @@ export function PublicGamePage({ id }: Props) {
 
       {cover && (
         <div className="relative aspect-[21/9] w-full overflow-hidden rounded-2xl bg-muted">
-          <Image
+          <MediaImage
             src={cover}
             alt=""
             fill
             priority
-            sizes="(min-width: 1024px) 64rem, 100vw"
             className="object-cover"
           />
         </div>

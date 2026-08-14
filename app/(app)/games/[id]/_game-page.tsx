@@ -1,7 +1,7 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
+import { MediaImage } from "@/components/media-image"
 import { useSearchParams } from "next/navigation"
 import { ArrowLeft, CalendarClock, MessagesSquare, Monitor } from "lucide-react"
 
@@ -86,12 +86,11 @@ export function GamePage({ id }: Props) {
           art instead of letting the ratio dictate the layout. */}
       <div className="relative h-56 w-full overflow-hidden rounded-2xl border border-border bg-card sm:h-72 lg:h-80">
         {art && (
-          <Image
+          <MediaImage
             src={art.media_ref}
             alt=""
             fill
             priority
-            sizes="100vw"
             className="object-cover"
           />
         )}

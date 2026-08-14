@@ -1,5 +1,5 @@
-import Image from "next/image"
 import Link from "next/link"
+import { MediaImage } from "@/components/media-image"
 import { CalendarClock, Check } from "lucide-react"
 
 import { PriceTag } from "@/components/game/price-tag"
@@ -40,11 +40,10 @@ export function GameCard({
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-muted">
         {art ? (
-          <Image
+          <MediaImage
             src={art}
             alt=""
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             priority={priority}
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />

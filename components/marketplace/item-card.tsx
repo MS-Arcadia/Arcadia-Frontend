@@ -1,5 +1,5 @@
-import Image from "next/image"
 import Link from "next/link"
+import { MediaImage } from "@/components/media-image"
 import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react"
 
 import { formatMoney } from "@/lib/money"
@@ -18,11 +18,10 @@ export function ItemCard({ item, priority = false }: Props) {
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-muted">
         {item.image_url ? (
-          <Image
+          <MediaImage
             src={item.image_url}
             alt=""
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             priority={priority}
             className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />

@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import { Check, ClipboardCheck, Loader2, Tag, X } from "lucide-react"
+
+import { MediaImage } from "@/components/media-image"
 
 import { GameStateBadge } from "@/components/game/game-state-badge"
 import { Button } from "@/components/ui/button"
@@ -115,11 +116,10 @@ function ReviewCard({ game }: { game: Game }) {
       <div className="flex gap-4 p-4">
         <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted">
           {art && (
-            <Image
+            <MediaImage
               src={art.media_ref}
               alt=""
               fill
-              sizes="80px"
               className="object-cover"
             />
           )}

@@ -1,9 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { ArrowLeft, Gift, Loader2, ShieldCheck } from "lucide-react"
+
+import { MediaImage } from "@/components/media-image"
 
 import { OrderBook } from "@/components/marketplace/order-book"
 import { PlaceOrderPanel } from "@/components/marketplace/place-order-panel"
@@ -73,12 +74,11 @@ export function ItemPage({ itemId }: Props) {
 
       <div className="relative h-56 w-full overflow-hidden rounded-2xl border border-border bg-card sm:h-72 lg:h-80">
         {item.image_url && (
-          <Image
+          <MediaImage
             src={item.image_url}
             alt=""
             fill
             priority
-            sizes="100vw"
             className="object-cover"
           />
         )}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import Image from "next/image"
+import { MediaImage } from "@/components/media-image"
 import { FileIcon, Loader2, Paperclip, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -190,11 +190,10 @@ export function PostComposer({ open, onOpenChange, defaultGameId }: Props) {
                   className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted"
                 >
                   {file.type.startsWith("image/") ? (
-                    <Image
+                    <MediaImage
                       src={URL.createObjectURL(file)}
                       alt=""
                       fill
-                      unoptimized
                       className="object-cover"
                     />
                   ) : (

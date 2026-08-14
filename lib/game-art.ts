@@ -1,4 +1,5 @@
 import type { GameMedia } from "@/types/catalog.api.type"
+import { publicAssetUrl } from "@/lib/media-url"
 
 /**
  * A game's cover art.
@@ -13,5 +14,8 @@ import type { GameMedia } from "@/types/catalog.api.type"
  * teaser, and a card with the wrong art still beats a card with none.
  */
 export function gameArt(media: GameMedia[]): GameMedia | undefined {
-  return media.find((item) => item.kind === "TEASER") ?? media[0]
+  const art = media.find((item) => item.kind === "TEASER") ?? media[0]
+  if (!art) return undefined
+  const url = publicAssetUrl(art.media_ref)
+  return url && url !== art.media_ref ? { ...art, media_ref: url } : art
 }

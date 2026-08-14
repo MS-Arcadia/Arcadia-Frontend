@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 import {
   Eye,
@@ -10,6 +9,7 @@ import {
   ShoppingBag,
 } from "lucide-react"
 
+import { MediaImage } from "@/components/media-image"
 import { AuthorChip } from "@/components/community/author-chip"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -62,11 +62,11 @@ export function ProfilePage({ userId }: Props) {
   const isOwn = me?.user_id === userId
 
   const { data: profile, isPending, isError } = usePublicProfileQuery(userId)
-  const { data: games = [], isPending: gamesPending } =
+  const { data: games = [], isLoading: gamesPending } =
     useProfileGamesQuery(profile)
-  const { data: items = [], isPending: itemsPending } =
+  const { data: items = [], isLoading: itemsPending } =
     useProfileItemsQuery(profile)
-  const { data: posts = [], isPending: postsPending } =
+  const { data: posts = [], isLoading: postsPending } =
     useProfileTopPostsQuery(userId)
 
   const hide = useHideGameMutation(userId)
@@ -117,7 +117,7 @@ export function ProfilePage({ userId }: Props) {
           <div className="relative shrink-0">
             <div className="flex size-24 items-center justify-center overflow-hidden rounded-2xl bg-primary/15 font-display text-3xl font-semibold text-primary ring-1 ring-primary/20 sm:size-28 sm:text-4xl">
               {profile.avatar_url ? (
-                <Image
+                <MediaImage
                   src={profile.avatar_url}
                   alt=""
                   width={112}
@@ -224,11 +224,10 @@ export function ProfilePage({ userId }: Props) {
                   className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-muted"
                 >
                   {art ? (
-                    <Image
+                    <MediaImage
                       src={art}
                       alt=""
                       fill
-                      sizes="64px"
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
@@ -295,11 +294,10 @@ export function ProfilePage({ userId }: Props) {
             >
               <div className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-muted">
                 {item.image_url ? (
-                  <Image
+                  <MediaImage
                     src={item.image_url}
                     alt=""
                     fill
-                    sizes="64px"
                     className="object-cover"
                   />
                 ) : (

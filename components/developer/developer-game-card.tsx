@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
+import { MediaImage } from "@/components/media-image"
 import { Loader2, Send, Upload } from "lucide-react"
 
 import { GameStateBadge } from "@/components/game/game-state-badge"
@@ -77,11 +77,10 @@ export function DeveloperGameCard({ game }: Props) {
       <div className="flex gap-4 p-4">
         <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted">
           {art && (
-            <Image
+            <MediaImage
               src={art.media_ref}
               alt=""
               fill
-              sizes="80px"
               className="object-cover"
             />
           )}

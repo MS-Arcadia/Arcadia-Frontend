@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { MediaImage } from "@/components/media-image"
 import Link from "next/link"
 import { CalendarClock, Check, Gift, Wallet } from "lucide-react"
 
@@ -46,12 +46,11 @@ export function StoreHero({ game, owned }: Props) {
   return (
     <section className="relative overflow-hidden rounded-2xl border border-border bg-card">
       {art && (
-        <Image
+        <MediaImage
           src={art.media_ref}
           alt=""
           fill
           priority
-          sizes="100vw"
           className="object-cover opacity-35"
         />
       )}

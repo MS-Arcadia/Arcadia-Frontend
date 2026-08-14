@@ -42,14 +42,16 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
 
   images: {
-    // Game art comes from the media service, which signs its own download URLs.
-    // Locally that is the compose stack; in production it is whatever the
-    // gateway fronts.
+    // Public art is fetched by the browser from MinIO (`MediaImage`), not
+    // through `/_next/image`. `unoptimized` keeps any leftover `next/image`
+    // from standing up that proxy if a remote src slips back in.
+    unoptimized: true,
     remotePatterns: [
       { protocol: "http", hostname: "localhost", port: "8084" },
       { protocol: "http", hostname: "localhost", port: "9000" },
       { protocol: "http", hostname: "media-service", port: "8084" },
       { protocol: "http", hostname: "minio", port: "9000" },
+      { protocol: "https", hostname: "minio.arcadia.aptcodegen.online" },
       ...gatewayImagePattern(),
     ],
   },

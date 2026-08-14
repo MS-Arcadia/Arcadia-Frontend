@@ -20,7 +20,14 @@ export function usePublicProfileQuery(userId: string) {
   })
 }
 
-/** Resolve bare game ids on a profile into storefront cards. */
+/**
+ * Resolve bare game ids on a profile into storefront cards.
+ *
+ * Callers must read `isLoading`, not `isPending`. With no ids the query is
+ * disabled, and TanStack Query v5 keeps `isPending` true forever in that
+ * state — which is why Library on a profile with an empty shelf never left
+ * its skeleton.
+ */
 export function useProfileGamesQuery(profile: PublicProfile | undefined) {
   const ids = profile?.owned_games.map((entry) => entry.game_id) ?? []
   return useQuery({

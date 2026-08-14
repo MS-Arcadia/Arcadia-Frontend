@@ -79,7 +79,10 @@ export function usePresence(): void {
         // token. Every frame after it is a heartbeat.
         socket?.send(token)
         heartbeat = setInterval(() => {
-          if (socket?.readyState === WebSocket.OPEN) socket.send("♥")
+          // ASCII on purpose. A heart character is three UTF-8 bytes; proxies
+          // and DevTools that assume Latin-1 render it as `â™¥`, which looked
+          // like a broken server frame rather than a heartbeat.
+          if (socket?.readyState === WebSocket.OPEN) socket.send("ping")
         }, HEARTBEAT_MS)
       }
 
