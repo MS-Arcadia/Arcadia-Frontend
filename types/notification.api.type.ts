@@ -25,6 +25,9 @@ export type NotificationKind =
   | "INSTALMENT_PLAN_COMPLETED"
   | "INSTALMENT_PLAN_DEFAULTED"
   | "PROMOTION_PROPOSED"
+  // Addressed to whoever can act on them rather than to the person who acted.
+  | "REVIEW_REQUESTED"
+  | "ROLE_REQUEST_RECEIVED"
 
 /** What the notification is about, so a client can build its own link. A URL is
  *  deliberately not stored server-side: it would rot the first time the front

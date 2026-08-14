@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Gamepad2, Plus } from "lucide-react"
 
 import { DeveloperGameCard } from "@/components/developer/developer-game-card"
@@ -23,6 +24,17 @@ export default function DeveloperPage() {
   const isDeveloper = useHasRole("DEVELOPER")
   const { data, isPending } = useMyGamesQuery()
   const [creating, setCreating] = useState(false)
+
+  // `?game=` comes from a notification — "20% off X is waiting for your approval". The
+  // decision lives on this page, so the link brings them here and this puts them in
+  // front of the right card instead of the top of a list.
+  const focused = useSearchParams().get("game")
+  useEffect(() => {
+    if (!focused || isPending) return
+    document
+      .getElementById(`game-${focused}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" })
+  }, [focused, isPending])
 
   const games = data?.items ?? []
   const needsYou = games.filter(

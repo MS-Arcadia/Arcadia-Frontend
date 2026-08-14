@@ -7,6 +7,7 @@ import {
   BellOff,
   CalendarClock,
   CheckCheck,
+  ClipboardCheck,
   Gift,
   Handshake,
   PartyPopper,
@@ -14,6 +15,7 @@ import {
   ShieldAlert,
   Sparkles,
   UserCheck,
+  UserRoundCog,
   type LucideIcon,
 } from "lucide-react"
 
@@ -60,6 +62,8 @@ const ICON: Record<NotificationKind, LucideIcon> = {
   INSTALMENT_PLAN_COMPLETED: CheckCheck,
   INSTALMENT_PLAN_DEFAULTED: ShieldAlert,
   PROMOTION_PROPOSED: Sparkles,
+  REVIEW_REQUESTED: ClipboardCheck,
+  ROLE_REQUEST_RECEIVED: UserRoundCog,
 }
 
 const BAD_NEWS = new Set<NotificationKind>([
@@ -70,9 +74,27 @@ const BAD_NEWS = new Set<NotificationKind>([
   "INSTALMENT_PLAN_DEFAULTED",
 ])
 
-/** Where a notification's subject lives, so the row is a link to the thing that
- *  happened rather than a dead end. */
+/**
+ * Where a notification takes you.
+ *
+ * Kind first, subject second. Several notifications are *asking you to do something*,
+ * and the place that thing is done is not the place the subject lives: "20% off X is
+ * waiting for your approval" is about a game, but a developer approving it does so on
+ * their own page — sending them to the store page for their own game left them looking
+ * at a Buy button and no way to say yes. Same for the two that reach staff.
+ */
 function hrefFor(note: Notification): string | null {
+  switch (note.kind) {
+    // The developer decides on their own games' page, where the discount panel is.
+    case "PROMOTION_PROPOSED":
+      return `/developer?game=${note.subject_id}`
+    // Support acts in the review queue, not on the storefront.
+    case "REVIEW_REQUESTED":
+      return "/review"
+    case "ROLE_REQUEST_RECEIVED":
+      return "/admin"
+  }
+
   switch (note.subject_type) {
     case "GAME":
       return `/games/${note.subject_id}`

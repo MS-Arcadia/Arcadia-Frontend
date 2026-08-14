@@ -68,7 +68,12 @@ export function DeveloperGameCard({ game }: Props) {
   const latest = game.versions.at(-1)
 
   return (
-    <article className="overflow-hidden rounded-xl border border-border bg-card">
+    // The id is the anchor a "waiting for your approval" notification lands on, so the
+    // developer arrives at the card holding the decision rather than at their whole list.
+    <article
+      id={`game-${game.id}`}
+      className="scroll-mt-24 overflow-hidden rounded-xl border border-border bg-card target:ring-2 target:ring-primary/60"
+    >
       <div className="flex gap-4 p-4">
         <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted">
           {art && (
