@@ -756,8 +756,10 @@ export function publicProfile(userId: string): PublicProfile {
       game_id: entry.game_id,
       hidden: hidden.has(entry.game_id),
     }))
-    // Public readers only see the visible shelf — same as the live service.
-    .filter((entry) => !entry.hidden)
+    // The owner sees everything, flagged; a visitor sees only what the owner chose to
+    // show. Filtering unconditionally is what made hiding permanent — the game left the
+    // one list from which it could have been unhidden.
+    .filter((entry) => !entry.hidden || currentUser().user_id === userId)
 
   const ownedItems = db.marketHoldings
     .filter((holding) => holding.user_id === userId && holding.quantity > 0)

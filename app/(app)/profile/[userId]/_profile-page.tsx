@@ -2,7 +2,13 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { EyeOff, Gamepad2, MessagesSquare, ShoppingBag } from "lucide-react"
+import {
+  Eye,
+  EyeOff,
+  Gamepad2,
+  MessagesSquare,
+  ShoppingBag,
+} from "lucide-react"
 
 import { AuthorChip } from "@/components/community/author-chip"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   useHideGameMutation,
+  useUnhideGameMutation,
   useProfileGamesQuery,
   useProfileItemsQuery,
   useProfileTopPostsQuery,
@@ -63,6 +70,7 @@ export function ProfilePage({ userId }: Props) {
     useProfileTopPostsQuery(userId)
 
   const hide = useHideGameMutation(userId)
+  const unhide = useUnhideGameMutation(userId)
 
   if (isPending) {
     return (
@@ -203,7 +211,13 @@ export function ProfilePage({ userId }: Props) {
             return (
               <article
                 key={entry.game_id}
-                className="group relative flex gap-3 overflow-hidden rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/40"
+                className={cn(
+                  "group relative flex gap-3 overflow-hidden rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/40",
+                  // A hidden game is dimmed rather than removed, and only its owner sees
+                  // it at all. It used to disappear from here entirely — which is the one
+                  // screen that can bring it back, so hiding a game was permanent.
+                  entry.hidden && "opacity-60"
+                )}
               >
                 <Link
                   href={`/games/${game.id}`}
@@ -234,16 +248,29 @@ export function ProfilePage({ userId }: Props) {
                     {game.genres.slice(0, 2).join(" · ") || "Game"}
                   </p>
                   {isOwn ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="-ms-2 h-7 gap-1.5 px-2 text-xs text-muted-foreground"
-                      disabled={hide.isPending}
-                      onClick={() => hide.mutate(game.id)}
-                    >
-                      <EyeOff className="size-3.5" />
-                      Hide from profile
-                    </Button>
+                    entry.hidden ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="-ms-2 h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+                        disabled={unhide.isPending}
+                        onClick={() => unhide.mutate(game.id)}
+                      >
+                        <Eye className="size-3.5" />
+                        Hidden — show again
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="-ms-2 h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+                        disabled={hide.isPending}
+                        onClick={() => hide.mutate(game.id)}
+                      >
+                        <EyeOff className="size-3.5" />
+                        Hide from profile
+                      </Button>
+                    )
                   ) : null}
                 </div>
               </article>
