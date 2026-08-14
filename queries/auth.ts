@@ -18,6 +18,7 @@ import {
   requestRole,
   unbanUser,
   getPendingRoleRequests,
+  lookupRecipient,
 } from "@/api/auth"
 import { ls } from "@/lib/local-storage"
 import { STORAGE_KEYS } from "@/lib/storage-keys"
@@ -210,5 +211,26 @@ export function usePendingRoleRequestsQuery() {
     queryKey: authKeys.pendingRoleRequests(),
     queryFn: getPendingRoleRequests,
     staleTime: 15 * 1000,
+  })
+}
+
+/**
+ * Look up who a gift is for, as the sender types.
+ *
+ * `enabled` keeps it quiet until there is something worth asking about — a lookup on
+ * every keystroke of an email address is a request per character, nearly all of which
+ * answer 404 before the address is finished.
+ *
+ * Failure is not a toast here. Half a typed address is not an error, it is a person
+ * still typing; the gift box shows the state inline instead.
+ */
+export function useRecipientLookupQuery(query: string) {
+  const trimmed = query.trim()
+  return useQuery({
+    queryKey: authKeys.recipient(trimmed),
+    queryFn: () => lookupRecipient(trimmed),
+    enabled: trimmed.length >= 3,
+    retry: false,
+    staleTime: 60 * 1000,
   })
 }

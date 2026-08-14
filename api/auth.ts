@@ -16,6 +16,32 @@ export const authKeys = {
   pendingRoleRequests: () => ["auth", "pending-role-requests"] as const,
   profile: (userId: string) => ["auth", "profile", userId] as const,
   directory: () => ["auth", "directory"] as const,
+  recipient: (query: string) => ["auth", "recipient", query] as const,
+}
+
+/** What a gift is addressed to, once the person has been found. */
+export interface Recipient {
+  user_id: string
+  display_name: string
+  avatar_url: string
+}
+
+/**
+ * Resolve an email — or an exact display name — to the account a gift goes to.
+ *
+ * A gift is addressed by account id, and nobody knows their friend's UUID. This box
+ * used to ask for one and send whatever was typed: a display name went through as a
+ * recipient id, nothing checked it, and the buyer was charged for a game that landed
+ * on an account which did not exist.
+ *
+ * 404 means nobody matches, 409 means two people share that display name and an email
+ * is needed to say which.
+ */
+export async function lookupRecipient(query: string): Promise<Recipient> {
+  const { data } = await http.get<Recipient>(API.auth.lookupRecipient, {
+    params: { q: query },
+  })
+  return data
 }
 
 /**

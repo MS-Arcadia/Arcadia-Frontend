@@ -38,6 +38,8 @@ export const API = {
     /** The admin screen's directory. Real now — it used to be mock-only, which is
      *  why that screen listed nobody against the live platform. */
     users: "/auth/v1/admin/users",
+    /** Resolve an email or exact display name to the account a gift is addressed to. */
+    lookupRecipient: "/auth/v1/users/lookup",
   },
   catalog: {
     games: "/catalog/v1/games",

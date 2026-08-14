@@ -141,6 +141,36 @@ route("post", API.auth.requestRole, ({ body }) =>
 // combined object, which is the shape no deployment ever produced — and why the
 // admin screen looked fine here and listed nobody against the real platform.
 route("get", API.auth.users, () => mock.allUsers())
+
+// Exact email, or an exact display name when only one person has it — the same rules
+// auth-profile-service applies, so the gift box behaves here the way it does live.
+route("get", API.auth.lookupRecipient, ({ query }) => {
+  const wanted = (query.get("q") ?? "").trim().toLowerCase()
+  if (!wanted)
+    throw new MockRuleError(404, "NOT_FOUND", "No account matches that")
+
+  const active = mock.allUsers().filter((user) => user.state === "ACTIVE")
+  const matches = wanted.includes("@")
+    ? active.filter((user) => user.email.toLowerCase() === wanted)
+    : active.filter((user) => user.display_name.toLowerCase() === wanted)
+
+  if (matches.length === 0) {
+    throw new MockRuleError(404, "NOT_FOUND", "No account matches that")
+  }
+  if (matches.length > 1) {
+    throw new MockRuleError(
+      409,
+      "RECIPIENT_NOT_UNIQUE",
+      "More than one account is called that"
+    )
+  }
+  return {
+    user_id: matches[0].user_id,
+    display_name: matches[0].display_name,
+    avatar_url: "",
+  }
+})
+
 route("get", API.auth.pendingRoleRequests, () =>
   mock.roleRequests().filter((request) => request.status === "PENDING")
 )
