@@ -122,19 +122,33 @@ export function toApiError(error: unknown): ApiError {
 }
 
 /**
- * One toast per failure, raised here rather than in each mutation.
+ * One toast per failed **action**, raised here rather than in each mutation.
  *
- * 401 is deliberately silent: the auth store reacts to it by clearing the
- * session and the router sends the person to the sign-in page, and a toast on
- * top of a redirect is noise. 404 is silent too — a missing thing is usually
- * something the page should render as empty, not shout about.
+ * Writes only. A GET that fails is a read, and every screen that reads already has
+ * somewhere to say so — an empty state, an inline message, a retry. Toasting those too
+ * meant a background refetch could interrupt whatever somebody was actually doing with a
+ * message about something else entirely: adding a game to a festival and being told your
+ * wallet balance is too low, from a poll that happened to land at that moment. An error
+ * that belongs to no visible action is worse than no error, because it sends people
+ * looking for a problem in the thing they were doing.
+ *
+ * 401 is silent for both: the auth store clears the session and the router moves to
+ * sign-in, and a toast on top of a redirect is noise. 404 is silent because a missing
+ * thing is usually something a page should render as empty.
  */
+const SILENT_STATUSES = new Set([401, 404])
+
 http.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
     const api = toApiError(error)
-    const quiet = api.status === 401 || api.status === 404
-    if (!quiet) toast.error(api.message)
+    const method = (
+      axios.isAxiosError(error) ? (error.config?.method ?? "get") : "get"
+    ).toLowerCase()
+
+    if (WRITES.has(method) && !SILENT_STATUSES.has(api.status)) {
+      toast.error(api.message)
+    }
     return Promise.reject(error)
   }
 )
