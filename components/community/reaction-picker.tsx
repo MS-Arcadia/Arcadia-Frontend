@@ -1,5 +1,13 @@
 "use client"
 
+import { SmilePlus } from "lucide-react"
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useSetReactionMutation } from "@/queries/community"
 import { useCommunityReactionsStore } from "@/stores/community-reactions.store"
 import { cn } from "@/lib/utils"
@@ -11,9 +19,11 @@ interface Props {
   className?: string
 }
 
-/** The closed twelve-emoji row. Each button shows its aggregate count from
- *  the post and toggles on click — a second click on the same emoji clears
- *  it, matching the mock's PUT-is-idempotent semantics. */
+/**
+ * Counts already on the post sit next to a single picker. Opening the picker
+ * is how a new emoji is chosen — lining all twelve up on every card crowded
+ * the footer and hid which reactions had actually been used.
+ */
 export function ReactionPicker({ postId, reactions, className }: Props) {
   const myReaction = useCommunityReactionsStore(
     (state) => state.myReactions[postId] ?? null
@@ -21,7 +31,9 @@ export function ReactionPicker({ postId, reactions, className }: Props) {
   const setMyReaction = useCommunityReactionsStore((state) => state.setReaction)
   const mutation = useSetReactionMutation(postId)
 
-  function handleClick(event: React.MouseEvent, emoji: string) {
+  const given = REACTION_EMOJI.filter((emoji) => (reactions[emoji] ?? 0) > 0)
+
+  function pick(event: React.SyntheticEvent, emoji: string) {
     event.preventDefault()
     event.stopPropagation()
     if (mutation.isPending) return
@@ -35,8 +47,8 @@ export function ReactionPicker({ postId, reactions, className }: Props) {
   }
 
   return (
-    <div className={cn("flex flex-wrap gap-1", className)}>
-      {REACTION_EMOJI.map((emoji) => {
+    <div className={cn("flex flex-wrap items-center gap-1", className)}>
+      {given.map((emoji) => {
         const count = reactions[emoji] ?? 0
         const active = myReaction === emoji
         return (
@@ -44,21 +56,53 @@ export function ReactionPicker({ postId, reactions, className }: Props) {
             key={emoji}
             type="button"
             aria-pressed={active}
-            aria-label={`React with ${emoji}`}
+            aria-label={`${emoji} ${count}`}
             disabled={mutation.isPending}
-            onClick={(event) => handleClick(event, emoji)}
+            onClick={(event) => pick(event, emoji)}
             className={cn(
-              "inline-flex min-h-7 items-center gap-1 rounded-full border px-2 text-xs transition-colors focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+              "inline-flex min-h-7 items-center gap-1 rounded-full border px-2 text-xs tabular transition-colors focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
               active
                 ? "border-primary/40 bg-primary/15 text-primary"
                 : "border-border text-muted-foreground hover:border-foreground/25 hover:text-foreground"
             )}
           >
             <span aria-hidden>{emoji}</span>
-            {count > 0 && <span className="tabular">{count}</span>}
+            {count}
           </button>
         )
       })}
+
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          disabled={mutation.isPending}
+          render={
+            <button
+              type="button"
+              aria-label="Add a reaction"
+              className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+            />
+          }
+        >
+          <SmilePlus className="size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-52 min-w-52 p-1.5">
+          <div className="grid grid-cols-6 gap-0.5">
+            {REACTION_EMOJI.map((emoji) => (
+              <DropdownMenuItem
+                key={emoji}
+                aria-label={`React with ${emoji}`}
+                className={cn(
+                  "size-8 justify-center p-0 text-base",
+                  myReaction === emoji && "bg-primary/15"
+                )}
+                onClick={(event) => pick(event, emoji)}
+              >
+                {emoji}
+              </DropdownMenuItem>
+            ))}
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

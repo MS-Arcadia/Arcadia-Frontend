@@ -16,6 +16,7 @@ import {
 import { AttachmentGallery } from "@/components/community/attachment-gallery"
 import { AuthorChip } from "@/components/community/author-chip"
 import { EditPostDialog } from "@/components/community/edit-post-dialog"
+import { GameChip } from "@/components/community/game-chip"
 import { ReactionPicker } from "@/components/community/reaction-picker"
 import { ReportDialog } from "@/components/community/report-dialog"
 import { Badge } from "@/components/ui/badge"
@@ -38,12 +39,19 @@ interface Props {
   post: Post
   /** True on the post's own detail page: no click-to-navigate, larger type. */
   detail?: boolean
+  /** Hide the game chip when the feed is already scoped to that game. */
+  showGame?: boolean
   /** Fires after a successful delete/remove — the detail page uses this to
    *  send the reader back to the feed rather than showing a 404. */
   onDeleted?: () => void
 }
 
-export function PostCard({ post, detail = false, onDeleted }: Props) {
+export function PostCard({
+  post,
+  detail = false,
+  showGame = true,
+  onDeleted,
+}: Props) {
   const router = useRouter()
   const userId = useAuthStore((state) => state.user?.user_id)
   const isStaff = useHasRole("SUPPORT", "ADMIN")
@@ -85,23 +93,26 @@ export function PostCard({ post, detail = false, onDeleted }: Props) {
         : {})}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-          <AuthorChip
-            authorId={post.author_id}
-            className="font-medium text-foreground"
-          />
-          <span aria-hidden>·</span>
-          <span>{formatRelative(post.created_at)}</span>
-          {post.edited_at && (
-            <span className="text-muted-foreground/70">(edited)</span>
-          )}
-          {removed && (
-            <Badge variant="destructive" className="ms-1">
-              {post.status === "REMOVED_BY_MODERATION"
-                ? "Removed by Support"
-                : "Deleted"}
-            </Badge>
-          )}
+        <div className="min-w-0 space-y-1.5">
+          {showGame && <GameChip gameId={post.game_id} />}
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            <AuthorChip
+              authorId={post.author_id}
+              className="font-medium text-foreground"
+            />
+            <span aria-hidden>·</span>
+            <span>{formatRelative(post.created_at)}</span>
+            {post.edited_at && (
+              <span className="text-muted-foreground/70">(edited)</span>
+            )}
+            {removed && (
+              <Badge variant="destructive" className="ms-1">
+                {post.status === "REMOVED_BY_MODERATION"
+                  ? "Removed by Support"
+                  : "Deleted"}
+              </Badge>
+            )}
+          </div>
         </div>
 
         <div onClick={stop}>

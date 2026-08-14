@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { MediaImage } from "@/components/media-image"
 import { FileIcon, Loader2, Paperclip, X } from "lucide-react"
 
@@ -48,7 +48,15 @@ export function PostComposer({ open, onOpenChange, defaultGameId }: Props) {
   const [files, setFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const gameOptions = games?.items ?? []
+  const gameItems = games?.items
+  const gameOptions = gameItems ?? []
+  const gameLabels = useMemo(
+    () =>
+      Object.fromEntries(
+        (gameItems ?? []).map((game) => [game.id, game.title])
+      ),
+    [gameItems]
+  )
   const canSubmit =
     Boolean(gameId) && (body.trim().length > 0 || files.length > 0)
 
@@ -101,8 +109,9 @@ export function PostComposer({ open, onOpenChange, defaultGameId }: Props) {
               Game
             </Label>
             <Select
-              value={gameId}
+              value={gameId || null}
               onValueChange={(value) => setGameId(value ?? "")}
+              items={gameLabels}
             >
               <SelectTrigger id="composer-game" className="w-full">
                 <SelectValue placeholder="Which game is this about?" />

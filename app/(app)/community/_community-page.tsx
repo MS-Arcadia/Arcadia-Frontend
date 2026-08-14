@@ -228,7 +228,7 @@ export function CommunityPage() {
       {posts.length > 0 && (
         <div className="space-y-4">
           {posts.map((post) => (
-            <PostCard key={post.id} post={post} />
+            <PostCard key={post.id} post={post} showGame={!gameId} />
           ))}
         </div>
       )}
