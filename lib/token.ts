@@ -47,3 +47,12 @@ export function isExpired(token: string | null | undefined): boolean {
   if (!claims?.exp) return false
   return claims.exp * 1000 <= Date.now()
 }
+
+/** Refresh a minute early so a request is not racing the token's last second. */
+const REFRESH_SKEW_MS = 60_000
+
+export function needsRefresh(token: string | null | undefined): boolean {
+  const claims = claimsOf(token)
+  if (!claims?.exp) return false
+  return claims.exp * 1000 <= Date.now() + REFRESH_SKEW_MS
+}

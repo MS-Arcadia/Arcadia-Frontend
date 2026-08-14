@@ -103,6 +103,25 @@ route("post", API.auth.login, ({ body }) => {
   }
 })
 
+route("post", API.auth.refresh, ({ body }) => {
+  const refresh = str(body.refresh_token)
+  if (!refresh.startsWith("mock.") || !refresh.endsWith(".refresh")) {
+    throw new MockRuleError(401, "TOKEN_INVALID", "Invalid refresh token.")
+  }
+  const userId = refresh.slice("mock.".length, -".refresh".length)
+  const user = db.users.find((candidate) => candidate.user_id === userId)
+  if (!user || user.state !== "ACTIVE") {
+    throw new MockRuleError(401, "TOKEN_INVALID", "Invalid refresh token.")
+  }
+  db.sessionUserId = user.user_id
+  mock.save()
+  return {
+    access_token: `mock.${user.user_id}.access`,
+    refresh_token: refresh,
+    token_type: "bearer",
+  }
+})
+
 route("post", API.auth.register, ({ body }) => {
   const user = mock.registerUser(
     str(body.email),

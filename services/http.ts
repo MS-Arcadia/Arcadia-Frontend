@@ -4,8 +4,15 @@ import axios, {
 } from "axios"
 import { toast } from "sonner"
 
-import { ls } from "@/lib/local-storage"
-import { STORAGE_KEYS } from "@/lib/storage-keys"
+import { API } from "@/lib/api-paths"
+import {
+  clearSession,
+  readAccessToken,
+  readRefreshToken,
+  saveSession,
+} from "@/lib/session"
+import { needsRefresh } from "@/lib/token"
+import type { TokenPair } from "@/types/auth.api.type"
 import type { ProblemDocument } from "@/types/common.api.type"
 
 import { installMockAdapter } from "./mocks/adapter"
@@ -19,9 +26,62 @@ export const http: AxiosInstance = axios.create({
   headers: { "Content-Type": "application/json" },
 })
 
-/** The access token, attached to every request that has one. */
-http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = ls.get<string | null>(STORAGE_KEYS.accessToken, null)
+/**
+ * Login, register, refresh and logout take a refresh token in the body (or no
+ * token at all). The gateway verifies a bearer token *if one is present*, so an
+ * expired access token on these calls never reaches the auth service — it dies
+ * at the edge as TOKEN_EXPIRED. That is why attaching the usual header here
+ * would make refresh itself impossible.
+ */
+function isCredentialExchange(config: InternalAxiosRequestConfig): boolean {
+  const url = `${config.baseURL ?? ""}${config.url ?? ""}`
+  return /\/auth\/v1\/auth\/(login|register|refresh|logout)(?:\?|$)/.test(url)
+}
+
+type RetryConfig = InternalAxiosRequestConfig & { _retried?: boolean }
+
+let refreshing: Promise<string | null> | null = null
+
+/**
+ * One in-flight refresh, shared by every caller that noticed the access token
+ * was dead. Without this, a page of parallel queries would each mint a new
+ * access token and race to write it.
+ */
+function refreshSession(): Promise<string | null> {
+  if (refreshing) return refreshing
+  refreshing = (async () => {
+    const refreshToken = readRefreshToken()
+    if (!refreshToken) return null
+    try {
+      const { data } = await http.post<TokenPair>(API.auth.refresh, {
+        refresh_token: refreshToken,
+      })
+      saveSession(data)
+      return data.access_token
+    } catch {
+      clearSession()
+      return null
+    }
+  })().finally(() => {
+    refreshing = null
+  })
+  return refreshing
+}
+
+/**
+ * The access token, attached to every request that has one — except the
+ * credential-exchange routes, and refreshed first if it is about to expire.
+ */
+http.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  if (isCredentialExchange(config)) {
+    config.headers.delete("Authorization")
+    return config
+  }
+
+  let token = readAccessToken()
+  if (token && needsRefresh(token)) {
+    token = (await refreshSession()) ?? token
+  }
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
@@ -132,15 +192,28 @@ export function toApiError(error: unknown): ApiError {
  * that belongs to no visible action is worse than no error, because it sends people
  * looking for a problem in the thing they were doing.
  *
- * 401 is silent for both: the auth store clears the session and the router moves to
- * sign-in, and a toast on top of a redirect is noise. 404 is silent because a missing
- * thing is usually something a page should render as empty.
+ * 401 is silent for both: the interceptor below refreshes, or the auth store
+ * clears the session and the router moves to sign-in. A toast on top of either
+ * is noise. 404 is silent because a missing thing is usually something a page
+ * should render as empty.
  */
 const SILENT_STATUSES = new Set([401, 404])
 
 http.interceptors.response.use(
   (response) => response,
-  (error: unknown) => {
+  async (error: unknown) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      const config = error.config as RetryConfig | undefined
+      if (config && !config._retried && !isCredentialExchange(config)) {
+        config._retried = true
+        const token = await refreshSession()
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`
+          return http.request(config)
+        }
+      }
+    }
+
     const api = toApiError(error)
     const method = (
       axios.isAxiosError(error) ? (error.config?.method ?? "get") : "get"

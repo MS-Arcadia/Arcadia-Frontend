@@ -3,8 +3,6 @@
 import { useEffect } from "react"
 
 import { API_MODE, IS_MOCKED } from "@/services/http"
-import { ls } from "@/lib/local-storage"
-import { STORAGE_KEYS } from "@/lib/storage-keys"
 import { useAuthStore } from "@/stores/auth.store"
 
 /**
@@ -50,11 +48,12 @@ function presenceUrl(): string | null {
 
 export function usePresence(): void {
   const userId = useAuthStore((state) => state.userId)
+  const accessToken = useAuthStore((state) => state.accessToken)
 
   useEffect(() => {
     // Nobody signed in, or no backend to tell. The mock has no socket and inventing
     // one would make this look wired when it is not — the exact failure being fixed.
-    if (!userId || IS_MOCKED) return
+    if (!userId || !accessToken || IS_MOCKED) return
 
     let socket: WebSocket | null = null
     let heartbeat: ReturnType<typeof setInterval> | null = null
@@ -64,8 +63,7 @@ export function usePresence(): void {
 
     const open = () => {
       if (stopped) return
-      const token = ls.get<string | null>(STORAGE_KEYS.accessToken, null)
-      if (!token) return
+      if (!accessToken) return
 
       const url = presenceUrl()
       if (!url) return
@@ -77,7 +75,7 @@ export function usePresence(): void {
         // The token first, before anything else: the server accepts the socket, waits
         // five seconds for this one frame, and hangs up on 4401 if it is not a usable
         // token. Every frame after it is a heartbeat.
-        socket?.send(token)
+        socket?.send(accessToken)
         heartbeat = setInterval(() => {
           // ASCII on purpose. A heart character is three UTF-8 bytes; proxies
           // and DevTools that assume Latin-1 render it as `â™¥`, which looked
@@ -108,7 +106,7 @@ export function usePresence(): void {
       // rather than something the TTL notices half a minute later.
       socket?.close()
     }
-  }, [userId])
+  }, [userId, accessToken])
 }
 
 /** Whether presence can work at all here — the mock has no socket to open. */

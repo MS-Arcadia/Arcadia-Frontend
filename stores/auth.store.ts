@@ -3,7 +3,7 @@
 import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
 
-import { ls } from "@/lib/local-storage"
+import { clearSession, onSessionChange, saveSession } from "@/lib/session"
 import { STORAGE_KEYS } from "@/lib/storage-keys"
 import { subjectOf } from "@/lib/token"
 import type { TokenPair, UserSummary } from "@/types/auth.api.type"
@@ -36,11 +36,7 @@ export const useAuthStore = create<AuthStore>()(
     (set) => ({
       ...EMPTY,
       signIn: (tokens) => {
-        // The access token also lives under its own key, because `services/http.ts`
-        // reads it from there in an interceptor and cannot import this store —
-        // that would make every module that touches `http` a client component.
-        ls.set(STORAGE_KEYS.accessToken, tokens.access_token)
-        ls.set(STORAGE_KEYS.refreshToken, tokens.refresh_token)
+        saveSession(tokens)
         set({
           accessToken: tokens.access_token,
           refreshToken: tokens.refresh_token,
@@ -49,8 +45,7 @@ export const useAuthStore = create<AuthStore>()(
       },
       setUser: (user) => set({ user }),
       signOut: () => {
-        ls.remove(STORAGE_KEYS.accessToken)
-        ls.remove(STORAGE_KEYS.refreshToken)
+        clearSession()
         set(EMPTY)
       },
     }),
@@ -71,6 +66,20 @@ export const useAuthStore = create<AuthStore>()(
     }
   )
 )
+
+if (typeof window !== "undefined") {
+  onSessionChange((tokens) => {
+    if (!tokens) {
+      useAuthStore.setState(EMPTY)
+      return
+    }
+    useAuthStore.setState({
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      userId: subjectOf(tokens.access_token),
+    })
+  })
+}
 
 /**
  * Whether the caller holds one of these roles.

@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react"
 
 import { usePresence } from "@/hooks/use-presence"
 import { useMeQuery } from "@/queries/auth"
+import { toApiError } from "@/services/http"
 import { useAuthStore } from "@/stores/auth.store"
 
 /**
@@ -22,7 +23,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const userId = useAuthStore((state) => state.userId)
   const user = useAuthStore((state) => state.user)
   const hydrated = useStoreHydrated()
-  const { isLoading, isError } = useMeQuery()
+  const { isLoading, isError, error } = useMeQuery()
   // Held open for as long as somebody is signed in, which is exactly the span this
   // component already owns.
   usePresence()
@@ -34,15 +35,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     if (hydrated && !userId) router.replace("/sign-in")
   }, [hydrated, userId, router])
 
-  // A stored token the server no longer accepts — expired, revoked, or from a
-  // database that has since been reset. Clearing it stops an endless loop of
-  // failed profile fetches.
+  // A stored token the server no longer accepts — refresh failed, revoked, or
+  // from a database that has since been reset. Network failures must not do
+  // this: that is how a blip looked like a signed-out session.
   useEffect(() => {
-    if (isError) {
-      useAuthStore.getState().signOut()
-      router.replace("/sign-in")
-    }
-  }, [isError, router])
+    if (!isError) return
+    if (toApiError(error).status !== 401) return
+    useAuthStore.getState().signOut()
+    router.replace("/sign-in")
+  }, [isError, error, router])
 
   if (!hydrated || !userId || (isLoading && !user)) {
     return (
