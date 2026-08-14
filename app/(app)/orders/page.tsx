@@ -6,9 +6,11 @@ import { Loader2, Receipt, RotateCcw } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useMeQuery } from "@/queries/auth"
 import { useOrdersQuery, useRefundMutation } from "@/queries/orders"
 import { formatDateTime, timeUntil } from "@/lib/datetime"
 import { formatMoney } from "@/lib/money"
+import { isReceivedGift } from "@/lib/order-gift"
 import { cn } from "@/lib/utils"
 import type { OrderState, OrderType } from "@/types/order.api.type"
 
@@ -51,6 +53,7 @@ const TONE = {
 } as const
 
 export default function OrdersPage() {
+  const { data: me } = useMeQuery()
   const { data, isPending } = useOrdersQuery()
   const refund = useRefundMutation()
   const orders = data?.items ?? []
@@ -90,6 +93,7 @@ export default function OrdersPage() {
           const state = STATE[order.state]
           const left = timeUntil(order.refundable_until)
           const refundable = order.state === "COMPLETED" && left !== null
+          const received = isReceivedGift(order, me?.user_id)
 
           return (
             <li
@@ -124,15 +128,15 @@ export default function OrdersPage() {
 
                   {order.gift && (
                     <p className="mt-1.5 text-xs text-muted-foreground">
-                      Sent to{" "}
+                      {received ? "From" : "Sent to"}{" "}
                       <span className="font-mono">
-                        {order.gift.recipient_id}
+                        {received ? order.buyer_id : order.gift.recipient_id}
                       </span>
                       {order.gift.message && ` — “${order.gift.message}”`}
                     </p>
                   )}
 
-                  {order.failure_message && (
+                  {order.failure_message && !received && (
                     <p className="mt-1.5 text-xs text-destructive">
                       {order.failure_message}
                     </p>
@@ -141,7 +145,7 @@ export default function OrdersPage() {
 
                 <div className="text-end">
                   <p className="text-sm font-semibold tabular">
-                    {formatMoney(order.total_charged)}
+                    {received ? "Gift" : formatMoney(order.total_charged)}
                   </p>
                   {refundable && (
                     <p className="mt-0.5 text-xs text-muted-foreground">

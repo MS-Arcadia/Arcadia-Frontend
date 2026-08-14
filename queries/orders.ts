@@ -63,13 +63,34 @@ function useSaleInvalidation() {
   }
 }
 
+function toastPlaced(
+  order: { state: string; game_title: string; failure_message: string },
+  ok: string,
+  pending: string,
+  extras?: { description?: string }
+) {
+  if (order.state === "FAILED") {
+    toast.error(order.failure_message || "The payment did not go through")
+    return
+  }
+  if (order.state === "PENDING") {
+    toast.message(pending)
+    return
+  }
+  toast.success(ok, extras)
+}
+
 export function useBuyGameMutation() {
   const invalidate = useSaleInvalidation()
   return useMutation({
     mutationFn: placeOrder,
     onSuccess: (order) => {
       invalidate()
-      toast.success(`${order.game_title} is yours`)
+      toastPlaced(
+        order,
+        `${order.game_title} is yours`,
+        `${order.game_title} is still processing`
+      )
     },
   })
 }
@@ -80,7 +101,11 @@ export function useGiftGameMutation() {
     mutationFn: placeGift,
     onSuccess: (order) => {
       invalidate()
-      toast.success(`Gift of ${order.game_title} sent`)
+      toastPlaced(
+        order,
+        `Gift of ${order.game_title} sent`,
+        `Gift of ${order.game_title} is still processing`
+      )
     },
   })
 }
@@ -91,9 +116,14 @@ export function usePreorderMutation() {
     mutationFn: placePreorder,
     onSuccess: (order) => {
       invalidate()
-      toast.success(`${order.game_title} pre-ordered`, {
-        description: "Your money is reserved and will be taken at release.",
-      })
+      toastPlaced(
+        order,
+        `${order.game_title} pre-ordered`,
+        `${order.game_title} is still processing`,
+        {
+          description: "Your money is reserved and will be taken at release.",
+        }
+      )
     },
   })
 }
@@ -104,9 +134,12 @@ export function useInstalmentOrderMutation() {
     mutationFn: placeInstalmentOrder,
     onSuccess: (order) => {
       invalidate()
-      toast.success(`Payment plan started for ${order.game_title}`, {
-        description: "The game is already in your library.",
-      })
+      toastPlaced(
+        order,
+        `Payment plan started for ${order.game_title}`,
+        `${order.game_title} is still processing`,
+        { description: "The game is already in your library." }
+      )
     },
   })
 }

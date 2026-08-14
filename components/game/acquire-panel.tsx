@@ -24,6 +24,12 @@ import { formatMoney, isFree, minorToMoney } from "@/lib/money"
 import type { RecipientSuggestion } from "@/api/auth"
 import type { Game } from "@/types/catalog.api.type"
 
+/** Same 200 bps / half-up as the order service's gift-message fee. */
+function giftFeeMinor(priceMinor: bigint, withMessage: boolean): bigint {
+  if (!withMessage) return 0n
+  return (priceMinor * 200n + 5000n) / 10000n
+}
+
 interface Props {
   game: Game
   owned: boolean
@@ -80,9 +86,10 @@ export function AcquirePanel({ game, owned, defaultIntent }: Props) {
   const preorder = game.state === "PREORDER"
   const free = isFree(price)
   const minor = price ? BigInt(price.amount_minor) : 0n
-  const affordable = wallet
-    ? BigInt(wallet.available.amount_minor) >= minor
-    : true
+  const available = wallet ? BigInt(wallet.available.amount_minor) : null
+  const affordable = available === null || available >= minor
+  const giftMinor = minor + giftFeeMinor(minor, Boolean(message.trim()))
+  const giftAffordable = available === null || available >= giftMinor
   const busy =
     buy.isPending || gift.isPending || instalment.isPending || reserve.isPending
 
@@ -217,6 +224,19 @@ export function AcquirePanel({ game, owned, defaultIntent }: Props) {
         )}
 
         <TabsContent value="gift" className="space-y-4 pt-5">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-xs text-muted-foreground">
+              Charged to your wallet
+            </span>
+            <span className="text-lg font-semibold tabular">
+              {formatMoney(minorToMoney(giftMinor, price?.currency ?? "IRR"))}
+            </span>
+          </div>
+
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            You pay. They get the game. Nothing is taken from their wallet.
+          </p>
+
           <GiftRecipientField
             value={recipient}
             onChange={(next) => {
@@ -246,13 +266,7 @@ export function AcquirePanel({ game, owned, defaultIntent }: Props) {
             />
             {message.trim() && (
               <p className="text-xs text-muted-foreground">
-                A message adds 2% to the price — {formatMoney(price)} becomes{" "}
-                <span className="tabular">
-                  {formatMoney(
-                    minorToMoney(minor + minor / 50n, price?.currency ?? "IRR")
-                  )}
-                </span>
-                .
+                A message adds 2% to the price.
               </p>
             )}
           </div>
@@ -261,7 +275,7 @@ export function AcquirePanel({ game, owned, defaultIntent }: Props) {
             className="min-h-11 w-full"
             // Nothing to send until we know who to. The id comes from the
             // suggestion they picked — never from the box as a raw string.
-            disabled={busy || !found}
+            disabled={busy || !found || (!giftAffordable && !free)}
             onClick={() =>
               found &&
               gift.mutate({
@@ -278,6 +292,13 @@ export function AcquirePanel({ game, owned, defaultIntent }: Props) {
             )}
             Send the gift
           </Button>
+
+          {!giftAffordable && !free && (
+            <p className="text-xs text-destructive">
+              Your wallet has {formatMoney(wallet?.available)}. Top it up to
+              cover the gift.
+            </p>
+          )}
         </TabsContent>
       </Tabs>
     </div>

@@ -4,6 +4,7 @@ import type { Page } from "@/types/common.api.type"
 import type {
   InstalmentPlan,
   Order,
+  OrderState,
   PlaceGiftBody,
   PlaceInstalmentBody,
   PlaceOrderBody,
@@ -29,32 +30,59 @@ export async function getOrder(id: string): Promise<Order> {
 }
 
 /**
+ * States in which money and ownership have already been decided. PENDING is the
+ * 202 from placing: the saga is still talking to the wallet.
+ */
+const SETTLED = new Set<OrderState>([
+  "COMPLETED",
+  "FAILED",
+  "CANCELLED",
+  "RESERVED",
+  "PAYING",
+  "DEFAULTED",
+  "REFUNDED",
+  "REFUNDING",
+])
+
+async function settleOrder(order: Order, ms = 20_000): Promise<Order> {
+  if (SETTLED.has(order.state)) return order
+  const deadline = Date.now() + ms
+  let delay = 200
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, delay))
+    const next = await getOrder(order.id)
+    if (SETTLED.has(next.state)) return next
+    delay = Math.min(Math.round(delay * 1.4), 1000)
+  }
+  return getOrder(order.id)
+}
+
+/**
  * Placing an order answers **202**, not 201: the order exists but nothing has
  * been charged or granted yet, because a purchase is a saga across the wallet
- * and the catalog. A client that treats the response as "done" will show a
- * library entry that is not there yet — poll the order, or wait for the
- * notification.
+ * and the catalog. These wait until that saga finishes (or times out still
+ * PENDING) so a success toast is not a lie.
  */
 export async function placeOrder(body: PlaceOrderBody): Promise<Order> {
   const { data } = await http.post<Order>(API.orders.place, body)
-  return data
+  return settleOrder(data)
 }
 
 export async function placeGift(body: PlaceGiftBody): Promise<Order> {
   const { data } = await http.post<Order>(API.orders.gift, body)
-  return data
+  return settleOrder(data)
 }
 
 export async function placePreorder(body: PlaceOrderBody): Promise<Order> {
   const { data } = await http.post<Order>(API.orders.preorder, body)
-  return data
+  return settleOrder(data)
 }
 
 export async function placeInstalmentOrder(
   body: PlaceInstalmentBody
 ): Promise<Order> {
   const { data } = await http.post<Order>(API.orders.instalment, body)
-  return data
+  return settleOrder(data)
 }
 
 export async function refundOrder(id: string): Promise<Order> {

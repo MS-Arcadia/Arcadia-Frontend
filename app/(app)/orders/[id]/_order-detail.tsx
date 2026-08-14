@@ -6,6 +6,7 @@ import { ArrowLeft, Check, Clock, Loader2, RotateCcw } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useMeQuery } from "@/queries/auth"
 import {
   useInstalmentPlanQuery,
   useOrderQuery,
@@ -14,6 +15,7 @@ import {
 } from "@/queries/orders"
 import { formatDate, formatDateTime, timeUntil } from "@/lib/datetime"
 import { formatMoney } from "@/lib/money"
+import { isReceivedGift } from "@/lib/order-gift"
 import { cn } from "@/lib/utils"
 import type { InstalmentState } from "@/types/order.api.type"
 
@@ -25,6 +27,7 @@ const INSTALMENT_TONE: Record<InstalmentState, string> = {
 }
 
 export function OrderDetail({ id }: { id: string }) {
+  const { data: me } = useMeQuery()
   const { data: order, isPending, isError } = useOrderQuery(id)
   const isPlan = order?.type === "INSTALMENT"
   const { data: plan } = useInstalmentPlanQuery(isPlan ? id : "")
@@ -59,6 +62,7 @@ export function OrderDetail({ id }: { id: string }) {
   const left = timeUntil(order.refundable_until)
   const refundable = order.state === "COMPLETED" && left !== null
   const nextDue = plan?.instalments.find((item) => item.state !== "PAID")
+  const received = isReceivedGift(order, me?.user_id)
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6">
@@ -81,7 +85,11 @@ export function OrderDetail({ id }: { id: string }) {
       {/* The money, itemised. The 70/30 split is shown because it is not a secret
           and it explains where a refund has to come back from. */}
       <dl className="divide-y divide-border rounded-xl border border-border text-sm">
-        <Row label="Charged" value={formatMoney(order.total_charged)} strong />
+        <Row
+          label={received ? "Charged to sender" : "Charged"}
+          value={formatMoney(order.total_charged)}
+          strong
+        />
         <Row label="List price" value={formatMoney(order.base_price)} />
         {order.discount && (
           <Row
@@ -114,9 +122,11 @@ export function OrderDetail({ id }: { id: string }) {
 
       {order.gift && (
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-sm font-medium">Sent as a gift</p>
+          <p className="text-sm font-medium">
+            {received ? "Received as a gift" : "Sent as a gift"}
+          </p>
           <p className="mt-1 font-mono text-xs text-muted-foreground">
-            {order.gift.recipient_id}
+            {received ? order.buyer_id : order.gift.recipient_id}
           </p>
           {order.gift.message && (
             <p className="mt-2 text-sm text-muted-foreground italic">

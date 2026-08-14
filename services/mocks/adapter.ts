@@ -412,7 +412,12 @@ route("post", API.catalog.rejectPromotion(":id", ":pid"), ({ params }) =>
 route("get", API.orders.list, ({ query }) => {
   const user = mock.currentUser()
   return paginate(
-    db.orders.filter((order) => order.buyer_id === user.user_id),
+    db.orders.filter(
+      (order) =>
+        order.buyer_id === user.user_id ||
+        (order.gift?.recipient_id === user.user_id &&
+          order.state === "COMPLETED")
+    ),
     query
   )
 })
@@ -421,7 +426,9 @@ route("get", API.orders.detail(":id"), ({ params }) => {
   const user = mock.currentUser()
   const order = db.orders.find(
     (candidate) =>
-      candidate.id === params[0] && candidate.buyer_id === user.user_id
+      candidate.id === params[0] &&
+      (candidate.buyer_id === user.user_id ||
+        candidate.gift?.recipient_id === user.user_id)
   )
   if (!order) throw new MockRuleError(404, "NOT_FOUND", "No such order")
   return order
