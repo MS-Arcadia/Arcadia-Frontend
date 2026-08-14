@@ -3,12 +3,11 @@
 import type { Role } from "./common.api.type"
 
 /**
- * A new account is `PENDING`, not active.
+ * A new account is `ACTIVE` and can sign in immediately.
  *
- * Requirement 1.1 puts an approval step between registering and signing in, so
- * the register response is not a login — there is no token in it. The one
- * exception is the seeded super admin, which is created ACTIVE because there is
- * nobody to approve the first administrator.
+ * `PENDING` is leftover: Support can still approve or reject an account that
+ * was created under the old gate. Role upgrades (developer, support) still wait
+ * for an administrator.
  */
 export type UserState = "PENDING" | "ACTIVE" | "REJECTED" | "BANNED"
 

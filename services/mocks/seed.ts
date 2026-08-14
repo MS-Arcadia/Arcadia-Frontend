@@ -70,8 +70,8 @@ export const SEED_USERS: SeedUser[] = [
     state: "ACTIVE",
     password: "admin-password",
   },
-  // Two people waiting on requirement 1.1's approval step, so the admin screen
-  // opens with something to decide rather than an empty state.
+  // Two people waiting on leftover registration decisions, so the admin screen
+  // still has something to decide rather than an empty state.
   {
     user_id: "55555555-5555-4555-8555-555555555555",
     email: "hopeful@arcadia.local",

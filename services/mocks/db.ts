@@ -685,7 +685,8 @@ export function signIn(email: string, password: string): MockUser {
       "That email and password do not match"
     )
   }
-  // Requirement 1.1: an account waits for an administrator before it can sign in.
+  // Requirement 1.1 used to hold new accounts for Support. Ordinary sign-ups
+  // are ACTIVE now; PENDING is leftover, and login still refuses it.
   if (user.state === "PENDING") {
     throw new MockRuleError(
       403,
@@ -731,9 +732,7 @@ export function registerUser(
     email: normalised,
     display_name: displayName.trim(),
     role: "BASIC_USER",
-    // PENDING, not ACTIVE — and there is no token in the response either.
-    // Registering is not signing in.
-    state: "PENDING",
+    state: "ACTIVE",
     password,
   }
   db.users.push(user)

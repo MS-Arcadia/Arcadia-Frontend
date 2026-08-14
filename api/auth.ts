@@ -69,9 +69,9 @@ export async function suggestRecipients(
 }
 
 /**
- * Registering does not sign anybody in — it returns a `PENDING` user and no
- * token. Requirement 1.1 puts an administrator's approval between the two, so the
- * UI has to say so rather than dropping the person on a dashboard.
+ * Registering creates an ACTIVE BASIC_USER. Signing in is a separate call —
+ * the register response is the account, not a session. The UI logs them in
+ * immediately afterwards.
  */
 export async function register(body: RegisterBody): Promise<RegisterResponse> {
   const { data } = await http.post<RegisterResponse>(API.auth.register, body)

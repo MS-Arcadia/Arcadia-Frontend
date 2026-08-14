@@ -113,7 +113,7 @@ export function LandingHero() {
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             className="mt-5 text-xs text-muted-foreground/70"
           >
-            An administrator approves new accounts before they can sign in.
+            You can sign in as soon as you create an account.
           </motion.p>
         </motion.div>
 

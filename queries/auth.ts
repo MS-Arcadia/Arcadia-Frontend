@@ -86,7 +86,21 @@ export function useLoginMutation() {
 }
 
 export function useRegisterMutation() {
-  return useMutation({ mutationFn: register })
+  const router = useRouter()
+  const signIn = useAuthStore((state) => state.signIn)
+  const client = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (body: Parameters<typeof register>[0]) => {
+      await register(body)
+      return login({ email: body.email, password: body.password })
+    },
+    onSuccess: (tokens) => {
+      signIn(tokens)
+      client.clear()
+      router.replace("/store")
+    },
+  })
 }
 
 export function useLogoutMutation() {

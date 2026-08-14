@@ -141,8 +141,6 @@ route("post", API.auth.register, ({ body }) => {
     str(body.password),
     str(body.display_name)
   )
-  // PENDING, and no token — requirement 1.1 puts an approval between registering
-  // and signing in, and a mock that returned a session would hide the whole state.
   return { user_id: user.user_id, email: user.email, state: user.state }
 })
 

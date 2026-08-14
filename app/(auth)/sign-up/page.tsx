@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Clock, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,50 +18,12 @@ export default function SignUpPage() {
     defaultValues: { displayName: "", email: "", password: "", confirm: "" },
   })
 
-  /**
-   * The whole reason this page has two states.
-   *
-   * Requirement 1.1 puts an administrator's approval between registering and
-   * signing in, so the response carries a PENDING user and no token. Redirecting
-   * to the store would land somebody on a 401; redirecting to sign-in would let
-   * them try a password that is going to be refused. Saying what happens next is
-   * the only honest option.
-   */
-  if (register.isSuccess) {
-    return (
-      <div className="space-y-4 rounded-xl border border-border bg-card p-6 text-center">
-        <span
-          aria-hidden
-          className="mx-auto flex size-11 items-center justify-center rounded-full bg-primary/15 text-primary"
-        >
-          <Clock className="size-5" strokeWidth={1.75} />
-        </span>
-        <h1 className="text-lg font-semibold">
-          Account created, waiting for approval
-        </h1>
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          An administrator has to approve{" "}
-          <span className="text-foreground">{register.data.email}</span> before
-          it can sign in. You will be told when that happens.
-        </p>
-        <Button
-          variant="outline"
-          className="min-h-11 w-full"
-          nativeButton={false}
-          render={<Link href="/sign-in" />}
-        >
-          Back to sign in
-        </Button>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       <div className="space-y-1.5">
         <h1 className="text-xl font-semibold">Create an account</h1>
         <p className="text-sm text-muted-foreground">
-          An administrator approves new accounts before they can sign in.
+          You can sign in as soon as the account exists.
         </p>
       </div>
 

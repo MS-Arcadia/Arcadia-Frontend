@@ -206,12 +206,12 @@ export default function LandingPage() {
               aria-hidden
             />
             <h2 className="mt-6 font-display text-3xl font-bold sm:text-4xl">
-              New accounts are approved by a person
+              Create an account and you are in
             </h2>
             <p className="mx-auto mt-4 max-w-xl leading-relaxed text-muted-foreground">
-              Registering does not sign you in. An administrator approves the
-              account first, and you are told when that happens — so the sign-in
-              page never refuses you without explaining itself.
+              No one has to approve a player. Sign up, sign in, and the store is
+              yours. Asking to be a developer still goes through an
+              administrator.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Button
