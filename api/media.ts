@@ -26,3 +26,10 @@ export async function uploadMedia(
   })
   return data
 }
+
+/** Catalog and profile store this string; the bytes stay in media-service. */
+export function mediaPublicUrl(uploaded: UploadedMedia): string {
+  if (uploaded.url) return uploaded.url
+  const origin = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "")
+  return `${origin}/media/v1/media/${uploaded.id}/content`
+}

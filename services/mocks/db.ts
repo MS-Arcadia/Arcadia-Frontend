@@ -165,6 +165,8 @@ interface Store {
   ownerships: Ownership[]
   /** Games a player has hidden from their public profile shelf. */
   hiddenGames: Record<string, string[]>
+  /** Public media URLs, keyed by user id — the same string auth-profile stores. */
+  avatarUrls: Record<string, string>
   orders: Order[]
   plans: InstalmentPlan[]
   wallets: Record<string, Wallet>
@@ -544,6 +546,7 @@ function initialStore(): Store {
     games,
     ownerships: seedOwnerships,
     hiddenGames: {},
+    avatarUrls: {},
     orders: [],
     plans: [],
     wallets,
@@ -631,6 +634,7 @@ function load(): Store {
   const saved = ls.get<Snapshot | null>(STORAGE_KEYS.mockDb, null)
   if (saved && saved.version === SNAPSHOT_VERSION) {
     sequence = saved.sequence
+    if (!saved.store.avatarUrls) saved.store.avatarUrls = {}
     return saved.store
   }
   return initialStore()
@@ -805,7 +809,7 @@ export function publicProfile(userId: string): PublicProfile {
   return {
     user_id: user.user_id,
     display_name: user.display_name,
-    avatar_url: "",
+    avatar_url: db.avatarUrls[userId] ?? "",
     online: db.sessionUserId === userId,
     owned_games: ownedGames,
     owned_items: ownedItems,
@@ -828,6 +832,12 @@ export function hideOwnedGame(gameId: string): void {
   const list = new Set(db.hiddenGames[user.user_id] ?? [])
   list.add(gameId)
   db.hiddenGames[user.user_id] = [...list]
+  save()
+}
+
+export function setAvatar(avatarUrl: string): void {
+  const user = currentUser()
+  db.avatarUrls[user.user_id] = avatarUrl.trim()
   save()
 }
 

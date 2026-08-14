@@ -1,10 +1,13 @@
 "use client"
 
+import { useRef } from "react"
 import Link from "next/link"
 import {
+  Camera,
   Eye,
   EyeOff,
   Gamepad2,
+  Loader2,
   MessagesSquare,
   ShoppingBag,
 } from "lucide-react"
@@ -17,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   useHideGameMutation,
   useUnhideGameMutation,
+  useSetAvatarMutation,
   useProfileGamesQuery,
   useProfileItemsQuery,
   useProfileTopPostsQuery,
@@ -71,6 +75,8 @@ export function ProfilePage({ userId }: Props) {
 
   const hide = useHideGameMutation(userId)
   const unhide = useUnhideGameMutation(userId)
+  const avatar = useSetAvatarMutation(userId)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   if (isPending) {
     return (
@@ -128,10 +134,40 @@ export function ProfilePage({ userId }: Props) {
                 initials(profile.display_name)
               )}
             </div>
+            {isOwn ? (
+              <>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) avatar.mutate(file)
+                    event.target.value = ""
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="secondary"
+                  className="absolute -end-1 -bottom-1 rounded-full"
+                  disabled={avatar.isPending}
+                  aria-label="Change profile photo"
+                  onClick={() => avatarInputRef.current?.click()}
+                >
+                  {avatar.isPending ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Camera className="size-3.5" />
+                  )}
+                </Button>
+              </>
+            ) : null}
             <span
               aria-label={profile.online ? "Online" : "Offline"}
               className={cn(
-                "absolute end-1 bottom-1 size-3.5 rounded-full ring-2 ring-card",
+                "absolute end-1 top-1 size-3.5 rounded-full ring-2 ring-card",
                 profile.online ? "bg-emerald-500" : "bg-muted-foreground/40"
               )}
             />

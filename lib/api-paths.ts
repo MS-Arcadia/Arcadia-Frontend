@@ -27,6 +27,7 @@ export const API = {
     pendingRoleRequests: "/auth/v1/admin/role-requests/pending",
     hideGame: "/auth/v1/profile/library/hide",
     unhideGame: "/auth/v1/profile/library/unhide",
+    setAvatar: "/auth/v1/profile/avatar",
     requestRole: "/auth/v1/roles/request",
     decideRoleRequest: (requestId: string) =>
       `/auth/v1/roles/${requestId}/decide`,

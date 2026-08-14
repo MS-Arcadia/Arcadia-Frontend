@@ -133,6 +133,11 @@ route("post", API.auth.unhideGame, ({ body }) => {
   return {}
 })
 
+route("post", API.auth.setAvatar, ({ body }) => {
+  mock.setAvatar(str(body.avatar_url))
+  return {}
+})
+
 route("post", API.auth.requestRole, ({ body }) =>
   mock.requestRole(str(body.requested_role, "DEVELOPER") as Role)
 )

@@ -1,5 +1,6 @@
 import { API } from "@/lib/api-paths"
 import { http } from "@/services/http"
+import { mediaPublicUrl, uploadMedia } from "@/api/media"
 import type {
   LoginBody,
   PublicProfile,
@@ -87,6 +88,17 @@ export async function hideGame(gameId: string): Promise<void> {
 /** Put a previously hidden game back on the public shelf. */
 export async function unhideGame(gameId: string): Promise<void> {
   await http.post(API.auth.unhideGame, { game_id: gameId })
+}
+
+/** Bytes go to media-service; auth-profile stores the public URL. */
+export async function setAvatar(file: File, userId: string): Promise<void> {
+  const uploaded = await uploadMedia(file, {
+    kind: "IMAGE",
+    referenceId: userId,
+  })
+  await http.post(API.auth.setAvatar, {
+    avatar_url: mediaPublicUrl(uploaded),
+  })
 }
 
 export async function requestRole(

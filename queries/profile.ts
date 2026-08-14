@@ -2,7 +2,13 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { authKeys, getProfile, hideGame, unhideGame } from "@/api/auth"
+import {
+  authKeys,
+  getProfile,
+  hideGame,
+  setAvatar,
+  unhideGame,
+} from "@/api/auth"
 import { getGame } from "@/api/catalog"
 import { getTopPostsByAuthor } from "@/api/community"
 import { getItem } from "@/api/marketplace"
@@ -93,6 +99,16 @@ export function useUnhideGameMutation(userId: string) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (gameId: string) => unhideGame(gameId),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: authKeys.profile(userId) })
+    },
+  })
+}
+
+export function useSetAvatarMutation(userId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => setAvatar(file, userId),
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: authKeys.profile(userId) })
     },
