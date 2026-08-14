@@ -369,7 +369,8 @@ export function DeveloperGameCard({ game }: Props) {
                 </div>
                 {game.final_price === null && (
                   <p className="text-xs text-muted-foreground/70">
-                    Publishing needs a price first — the catalog refuses otherwise.
+                    Publishing needs a price first — the catalog refuses
+                    otherwise.
                   </p>
                 )}
               </>
