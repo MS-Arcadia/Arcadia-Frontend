@@ -90,6 +90,19 @@ function str(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback
 }
 
+function recipientPrefixMatch(
+  user: { email: string; display_name: string },
+  needle: string
+): boolean {
+  const email = user.email.toLowerCase()
+  const name = user.display_name.toLowerCase()
+  return (
+    email.startsWith(needle) ||
+    name.startsWith(needle) ||
+    name.includes(` ${needle}`)
+  )
+}
+
 // --- auth ------------------------------------------------------------------
 
 route("post", API.auth.login, ({ body }) => {
@@ -166,14 +179,34 @@ route("post", API.auth.requestRole, ({ body }) =>
 // admin screen looked fine here and listed nobody against the real platform.
 route("get", API.auth.users, () => mock.allUsers())
 
+// Prefix on email or display name — the same rules auth-profile-service applies, so
+// typing `player@arcadia.exampl` surfaces the account here the way it does live.
+route("get", API.auth.suggestRecipients, ({ query }) => {
+  const wanted = (query.get("q") ?? "").trim().toLowerCase()
+  if (wanted.length < 2) return []
+  const me = mock.currentUser()
+  return db.users
+    .filter((user) => user.state === "ACTIVE" && user.user_id !== me.user_id)
+    .filter((user) => recipientPrefixMatch(user, wanted))
+    .sort((a, b) => a.display_name.localeCompare(b.display_name))
+    .slice(0, 8)
+    .map((user) => ({
+      user_id: user.user_id,
+      display_name: user.display_name,
+      email: user.email,
+      avatar_url: "",
+    }))
+})
+
 // Exact email, or an exact display name when only one person has it — the same rules
-// auth-profile-service applies, so the gift box behaves here the way it does live.
+// auth-profile-service applies. Reads the store directly: `allUsers()` is the admin
+// directory and 403s a player who is trying to send a gift.
 route("get", API.auth.lookupRecipient, ({ query }) => {
   const wanted = (query.get("q") ?? "").trim().toLowerCase()
   if (!wanted)
     throw new MockRuleError(404, "NOT_FOUND", "No account matches that")
 
-  const active = mock.allUsers().filter((user) => user.state === "ACTIVE")
+  const active = db.users.filter((user) => user.state === "ACTIVE")
   const matches = wanted.includes("@")
     ? active.filter((user) => user.email.toLowerCase() === wanted)
     : active.filter((user) => user.display_name.toLowerCase() === wanted)

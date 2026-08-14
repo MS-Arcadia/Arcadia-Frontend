@@ -1,8 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Check, Gift, Loader2, Wallet } from "lucide-react"
 
+import {
+  GiftRecipientField,
+  resolvedGiftRecipient,
+  suggestionFitsQuery,
+} from "@/components/game/gift-recipient-field"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,10 +18,10 @@ import {
   useInstalmentOrderMutation,
   usePreorderMutation,
 } from "@/queries/orders"
-import { useRecipientLookupQuery } from "@/queries/auth"
+import { useRecipientSuggestQuery } from "@/queries/auth"
 import { useWalletQuery } from "@/queries/wallet"
-import { toApiError } from "@/services/http"
 import { formatMoney, isFree, minorToMoney } from "@/lib/money"
+import type { RecipientSuggestion } from "@/api/auth"
 import type { Game } from "@/types/catalog.api.type"
 
 interface Props {
@@ -44,13 +49,30 @@ export function AcquirePanel({ game, owned, defaultIntent }: Props) {
   const reserve = usePreorderMutation()
 
   const [recipient, setRecipient] = useState("")
-  // Resolved as the sender types, so the gift is addressed to a person rather than to
-  // whatever string was in the box.
-  const recipientQuery = useRecipientLookupQuery(recipient)
-  const found = recipientQuery.data
-  const lookupError = recipientQuery.isError
-    ? toApiError(recipientQuery.error)
-    : null
+  const [picked, setPicked] = useState<RecipientSuggestion | null>(null)
+  const [debounced, setDebounced] = useState("")
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(recipient.trim()), 200)
+    return () => window.clearTimeout(timer)
+  }, [recipient])
+  const suggestQuery = useRecipientSuggestQuery(debounced)
+  const suggestions = (suggestQuery.data ?? []).filter((row) =>
+    suggestionFitsQuery(row, recipient)
+  )
+  const found = resolvedGiftRecipient(recipient, suggestions, picked)
+  const trimmed = recipient.trim()
+  const caughtUp = debounced === trimmed
+  const looking =
+    trimmed.length >= 2 &&
+    !found &&
+    suggestions.length === 0 &&
+    (!caughtUp || suggestQuery.isFetching)
+  const empty =
+    trimmed.length >= 2 &&
+    caughtUp &&
+    !suggestQuery.isFetching &&
+    !found &&
+    suggestions.length === 0
   const [message, setMessage] = useState("")
   const [plan, setPlan] = useState<number>(4)
 
@@ -195,43 +217,21 @@ export function AcquirePanel({ game, owned, defaultIntent }: Props) {
         )}
 
         <TabsContent value="gift" className="space-y-4 pt-5">
-          <div className="space-y-2">
-            <Label htmlFor="recipient" className="text-xs">
-              Who is it for
-            </Label>
-            <Input
-              id="recipient"
-              value={recipient}
-              onChange={(event) => setRecipient(event.target.value)}
-              placeholder="Their email address"
-              autoComplete="off"
-              aria-describedby="recipient-state"
-              className="min-h-11"
-            />
-
-            {/* Who the gift is actually going to, before any money moves. This box
-                used to ask for an account id and send whatever was typed — so a name
-                went through as an id, and the game was paid for and delivered to
-                nobody. Naming the person is the confirmation. */}
-            <p id="recipient-state" className="min-h-5 text-xs">
-              {recipientQuery.isFetching && (
-                <span className="text-muted-foreground">Looking…</span>
-              )}
-              {!recipientQuery.isFetching && found && (
-                <span className="inline-flex items-center gap-1.5 font-medium text-brand-sky">
-                  <Check className="size-3.5" />
-                  Sending to {found.display_name}
-                </span>
-              )}
-              {!recipientQuery.isFetching && lookupError && (
-                <span className="text-muted-foreground">
-                  {lookupError.status === 409
-                    ? "More than one person is called that — use their email address."
-                    : "No account matches that. Check the spelling, or ask them for the email they signed up with."}
-                </span>
-              )}
-            </p>
-          </div>
+          <GiftRecipientField
+            value={recipient}
+            onChange={(next) => {
+              setRecipient(next)
+              setPicked(null)
+            }}
+            onPick={(person) => {
+              setPicked(person)
+              setRecipient(person.email)
+            }}
+            suggestions={suggestions}
+            found={found}
+            loading={looking}
+            empty={empty}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="message" className="text-xs">
@@ -259,9 +259,8 @@ export function AcquirePanel({ game, owned, defaultIntent }: Props) {
 
           <Button
             className="min-h-11 w-full"
-            // Nothing to send until we know who to. The id comes from the lookup, never
-            // from the box: a gift addressed to a typed string is how one got paid for
-            // and delivered to an account that did not exist.
+            // Nothing to send until we know who to. The id comes from the
+            // suggestion they picked — never from the box as a raw string.
             disabled={busy || !found}
             onClick={() =>
               found &&

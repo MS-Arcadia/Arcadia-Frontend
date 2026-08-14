@@ -18,12 +18,21 @@ export const authKeys = {
   profile: (userId: string) => ["auth", "profile", userId] as const,
   directory: () => ["auth", "directory"] as const,
   recipient: (query: string) => ["auth", "recipient", query] as const,
+  suggest: (query: string) => ["auth", "suggest", query] as const,
 }
 
 /** What a gift is addressed to, once the person has been found. */
 export interface Recipient {
   user_id: string
   display_name: string
+  avatar_url: string
+}
+
+/** One row in the gift-box autocomplete. Email is here so an unfinished address can be picked. */
+export interface RecipientSuggestion {
+  user_id: string
+  display_name: string
+  email: string
   avatar_url: string
 }
 
@@ -42,6 +51,20 @@ export async function lookupRecipient(query: string): Promise<Recipient> {
   const { data } = await http.get<Recipient>(API.auth.lookupRecipient, {
     params: { q: query },
   })
+  return data
+}
+
+/**
+ * Prefix suggestions for the gift box. Lookup stays exact; this is what answers
+ * while the address is still being typed.
+ */
+export async function suggestRecipients(
+  query: string
+): Promise<RecipientSuggestion[]> {
+  const { data } = await http.get<RecipientSuggestion[]>(
+    API.auth.suggestRecipients,
+    { params: { q: query } }
+  )
   return data
 }
 

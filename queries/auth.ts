@@ -1,6 +1,11 @@
 "use client"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -19,6 +24,7 @@ import {
   unbanUser,
   getPendingRoleRequests,
   lookupRecipient,
+  suggestRecipients,
 } from "@/api/auth"
 import { ls } from "@/lib/local-storage"
 import { STORAGE_KEYS } from "@/lib/storage-keys"
@@ -211,6 +217,27 @@ export function usePendingRoleRequestsQuery() {
     queryKey: authKeys.pendingRoleRequests(),
     queryFn: getPendingRoleRequests,
     staleTime: 15 * 1000,
+  })
+}
+
+/**
+ * Prefix suggestions for the gift box, as the sender types.
+ *
+ * Debounce lives at the call site so a keystroke is not a request. Enabled from
+ * two characters — one is too little to type and too much of a directory.
+ */
+export function useRecipientSuggestQuery(query: string) {
+  const trimmed = query.trim()
+  const userId = useAuthStore((state) => state.userId)
+  return useQuery({
+    queryKey: authKeys.suggest(trimmed),
+    queryFn: () => suggestRecipients(trimmed),
+    enabled: trimmed.length >= 2,
+    retry: false,
+    staleTime: 15 * 1000,
+    placeholderData: keepPreviousData,
+    select: (rows) =>
+      userId ? rows.filter((row) => row.user_id !== userId) : rows,
   })
 }
 

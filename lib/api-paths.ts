@@ -41,6 +41,8 @@ export const API = {
     users: "/auth/v1/admin/users",
     /** Resolve an email or exact display name to the account a gift is addressed to. */
     lookupRecipient: "/auth/v1/users/lookup",
+    /** Prefix suggestions for the gift box, as the sender types. */
+    suggestRecipients: "/auth/v1/users/suggest",
   },
   catalog: {
     games: "/catalog/v1/games",
