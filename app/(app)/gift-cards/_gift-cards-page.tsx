@@ -64,7 +64,7 @@ export function GiftCardsPage() {
     )
   }
 
-  const cards = data?.items ?? []
+  const cards = data?.gift_cards ?? []
   const digits = amount.replace(/\D/g, "")
   const valid = digits.length > 0 && BigInt(digits || "0") > 0n
 

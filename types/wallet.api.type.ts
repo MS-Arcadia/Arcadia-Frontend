@@ -103,6 +103,20 @@ export interface GiftCard {
 
 export type GiftCardStatus = "ACTIVE" | "REDEEMED" | "REVOKED"
 
+/**
+ * The listing, page-numbered and named after its contents — the same shape as
+ * `LedgerPage`, because both come from wallet-service and that is how the Go services
+ * paginate. It is **not** `Page<T>`: reading it as one leaves `items` undefined and the
+ * table renders empty while the request succeeds.
+ */
+export interface GiftCardPage {
+  gift_cards: GiftCard[]
+  total_items: number
+  page: number
+  page_size: number
+  total_pages: number
+}
+
 export interface IssueGiftCardsResult {
   batch_id: string
   gift_cards: GiftCard[]

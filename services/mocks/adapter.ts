@@ -430,8 +430,11 @@ route("post", API.wallet.issueGiftCard, ({ body }) => {
   )
 })
 
+// Page-numbered and named after its contents, like the ledger beside it — wallet-service
+// paginates this way and `paginate()` would have produced `items`, which the screen would
+// then read as empty forever.
 route("get", API.wallet.giftCards, ({ query }) =>
-  paginate(mock.listGiftCards(), query)
+  pageNumbered(mock.listGiftCards(), query, "gift_cards")
 )
 
 // --- the sandbox bank (mock mode only) --------------------------------------

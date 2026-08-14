@@ -1,9 +1,9 @@
 import { API } from "@/lib/api-paths"
 import { http } from "@/services/http"
-import type { Money, Page } from "@/types/common.api.type"
+import type { Money } from "@/types/common.api.type"
 import type {
   ChargeResult,
-  GiftCard,
+  GiftCardPage,
   IssueGiftCardsResult,
   LedgerPage,
   RedeemGiftCardResult,
@@ -76,10 +76,15 @@ export async function issueGiftCards(input: {
   return data
 }
 
-/** Every card issued, for seeing what is outstanding. Codes are not included. */
-export async function getGiftCards(): Promise<Page<GiftCard>> {
-  const { data } = await http.get<Page<GiftCard>>(API.wallet.giftCards, {
-    params: { limit: 100 },
+/**
+ * Every card issued, for seeing what is outstanding. Codes are not included — wallet
+ * keeps a hash, so what comes back is `code_hint` and nothing more.
+ *
+ * Page-numbered like the ledger, not offset-based like the catalogue.
+ */
+export async function getGiftCards(): Promise<GiftCardPage> {
+  const { data } = await http.get<GiftCardPage>(API.wallet.giftCards, {
+    params: { page: 1, page_size: 100 },
   })
   return data
 }
