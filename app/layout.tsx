@@ -96,7 +96,7 @@ export default function RootLayout({
     >
       <body className="min-h-dvh font-sans">
         <NextTopLoader
-          color="#62B4F0"
+          color="var(--primary)"
           height={2}
           showSpinner={false}
           shadow={false}
