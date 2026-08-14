@@ -28,14 +28,20 @@ const HEARTBEAT_MS = 10_000
 const FIRST_RETRY_MS = 1_000
 const MAX_RETRY_MS = 30_000
 
-/** `https://…` → `wss://…`, and the same for the insecure pair. */
-function presenceUrl(token: string): string | null {
+/**
+ * `https://…` → `wss://…`, and the same for the insecure pair.
+ *
+ * No token in it. A browser cannot set headers on a WebSocket handshake, so the usual
+ * trick is `?token=`, and the cost is a live access token in every access log that
+ * records a request line — which on this platform means Loki, readable by anyone with a
+ * Grafana login. It goes in the first frame instead.
+ */
+function presenceUrl(): string | null {
   const base = process.env.NEXT_PUBLIC_API_URL
   if (!base) return null
   try {
     const url = new URL("/auth/ws/presence", base)
     url.protocol = url.protocol === "https:" ? "wss:" : "ws:"
-    url.searchParams.set("token", token)
     return url.toString()
   } catch {
     return null
@@ -61,13 +67,17 @@ export function usePresence(): void {
       const token = ls.get<string | null>(STORAGE_KEYS.accessToken, null)
       if (!token) return
 
-      const url = presenceUrl(token)
+      const url = presenceUrl()
       if (!url) return
 
       socket = new WebSocket(url)
 
       socket.onopen = () => {
         delay = FIRST_RETRY_MS
+        // The token first, before anything else: the server accepts the socket, waits
+        // five seconds for this one frame, and hangs up on 4401 if it is not a usable
+        // token. Every frame after it is a heartbeat.
+        socket?.send(token)
         heartbeat = setInterval(() => {
           if (socket?.readyState === WebSocket.OPEN) socket.send("♥")
         }, HEARTBEAT_MS)
