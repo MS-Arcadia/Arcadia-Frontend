@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter } from "nextjs-toploader/app"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { ArrowLeft, Loader2, MessageCircle, Send } from "lucide-react"
 
@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { useAddCommentMutation, usePostQuery } from "@/queries/community"
+import { useAuthStore } from "@/stores/auth.store"
 import type { CursorPage } from "@/types/common.api.type"
 import type { Comment } from "@/types/community.api.type"
 
@@ -23,6 +24,8 @@ interface Props {
 
 export function PostPage({ postId }: Props) {
   const router = useRouter()
+  const userId = useAuthStore((state) => state.userId)
+  const signedIn = userId !== null
   const { data: post, isPending, isError } = usePostQuery(postId)
 
   const comments = useInfiniteQuery<CursorPage<Comment>>({
@@ -42,7 +45,7 @@ export function PostPage({ postId }: Props) {
 
   if (isPending) {
     return (
-      <div className="mx-auto w-full max-w-2xl space-y-6">
+      <div className="mx-auto w-full max-w-2xl space-y-6 px-6 py-10 lg:px-10">
         <Skeleton className="h-48 w-full rounded-xl" />
         <Skeleton className="h-24 w-full rounded-xl" />
       </div>
@@ -51,7 +54,7 @@ export function PostPage({ postId }: Props) {
 
   if (isError || !post) {
     return (
-      <div className="mx-auto max-w-md py-24 text-center">
+      <div className="mx-auto max-w-md px-6 py-24 text-center lg:px-10">
         <h1 className="text-lg font-semibold">No such post</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           It may have been removed or deleted.
@@ -60,7 +63,7 @@ export function PostPage({ postId }: Props) {
           variant="outline"
           className="mt-5 min-h-11"
           nativeButton={false}
-          render={<Link href="/community" />}
+          render={<Link href="/community" prefetch />}
         >
           Back to community
         </Button>
@@ -72,13 +75,13 @@ export function PostPage({ postId }: Props) {
   const loadingMore = comments.isFetchingNextPage
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6">
+    <div className="mx-auto w-full max-w-2xl space-y-6 px-6 py-10 lg:px-10">
       <Button
         variant="ghost"
         size="sm"
         className="-ms-2 gap-1.5"
         nativeButton={false}
-        render={<Link href={`/community?game=${post.game_id}`} />}
+        render={<Link href={`/community?game=${post.game_id}`} prefetch />}
       >
         <ArrowLeft className="size-3.5 rtl:rotate-180" />
         Community
@@ -98,33 +101,52 @@ export function PostPage({ postId }: Props) {
           Comments
         </h2>
 
-        <div className="space-y-1.5">
-          <Textarea
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder="Add a comment..."
-            className="min-h-16"
-          />
-          <div className="flex justify-end">
+        {signedIn ? (
+          <div className="space-y-1.5">
+            <Textarea
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="Add a comment..."
+              className="min-h-16"
+            />
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                className="min-h-9 gap-1.5"
+                disabled={addComment.isPending || !draft.trim()}
+                onClick={() =>
+                  addComment.mutate(draft.trim(), {
+                    onSuccess: () => setDraft(""),
+                  })
+                }
+              >
+                {addComment.isPending ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Send className="size-3.5" />
+                )}
+                Comment
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            Comments are public. Writing one needs an account.
             <Button
-              size="sm"
-              className="min-h-9 gap-1.5"
-              disabled={addComment.isPending || !draft.trim()}
-              onClick={() =>
-                addComment.mutate(draft.trim(), {
-                  onSuccess: () => setDraft(""),
-                })
+              variant="link"
+              className="h-auto min-h-0 p-0 text-sm"
+              nativeButton={false}
+              render={
+                <Link
+                  href={`/sign-in?next=${encodeURIComponent(`/community/${postId}`)}`}
+                  prefetch
+                />
               }
             >
-              {addComment.isPending ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Send className="size-3.5" />
-              )}
-              Comment
+              Sign in to comment
             </Button>
-          </div>
-        </div>
+          </p>
+        )}
 
         {commentsLoading && (
           <div className="space-y-3">
@@ -142,7 +164,9 @@ export function PostPage({ postId }: Props) {
 
         {!commentsLoading && !comments.isError && commentItems.length === 0 && (
           <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            No comments yet. Be the first to say something.
+            {signedIn
+              ? "No comments yet. Be the first to say something."
+              : "No comments yet."}
           </p>
         )}
 

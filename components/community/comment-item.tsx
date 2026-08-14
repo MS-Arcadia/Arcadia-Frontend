@@ -37,9 +37,10 @@ interface Props {
 }
 
 export function CommentItem({ postId, comment }: Props) {
-  const userId = useAuthStore((state) => state.user?.user_id)
+  const userId = useAuthStore((state) => state.userId)
   const isStaff = useHasRole("SUPPORT", "ADMIN")
   const isAuthor = userId === comment.author_id
+  const signedIn = userId !== null
 
   const [editing, setEditing] = useState(false)
   const [body, setBody] = useState(comment.body)
@@ -121,7 +122,7 @@ export function CommentItem({ postId, comment }: Props) {
         )}
       </div>
 
-      {!editing && (
+      {!editing && signedIn && (
         <DropdownMenu>
           <DropdownMenuTrigger
             render={

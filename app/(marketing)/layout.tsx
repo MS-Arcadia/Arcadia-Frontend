@@ -1,4 +1,5 @@
 import { MarketingHeader } from "@/components/marketing/marketing-header"
+import { PrefetchPublicRoutes } from "@/components/pwa/prefetch-public"
 
 /**
  * The public shell.
@@ -15,6 +16,7 @@ export default function MarketingLayout({
 }) {
   return (
     <div className="flex min-h-dvh flex-col">
+      <PrefetchPublicRoutes />
       <MarketingHeader />
       <main className="flex-1">{children}</main>
       <footer className="border-t border-border px-6 py-10 lg:px-10">

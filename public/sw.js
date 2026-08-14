@@ -16,15 +16,25 @@
  *    keeps the last response in memory for the length of a session, which is the
  *    right place for that decision because it knows what is stale.
  *
- * The offline fallback is therefore a page that says the connection is gone, not a
- * pretend copy of the store.
+ * Public documents are prefetched on install and on `PREFETCH` messages from the
+ * page, so the first click on Games / Festivals is a cache hit instead of a wait.
  */
 
-const VERSION = "v1"
+const VERSION = "v3"
 const SHELL_CACHE = `arcadia-shell-${VERSION}`
 const OFFLINE_URL = "/offline"
 
 const PRECACHE = [OFFLINE_URL, "/logo.png", "/icon-192.png", "/icon-512.png"]
+
+const PUBLIC_PREFETCH = [
+  "/",
+  "/browse",
+  "/festivals",
+  "/community",
+  "/sign-in",
+  "/sign-up",
+  OFFLINE_URL,
+]
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -37,6 +47,7 @@ self.addEventListener("install", (event) => {
           PRECACHE.map((url) => new Request(url, { cache: "reload" }))
         )
       )
+      .then(() => prefetchUrls(PUBLIC_PREFETCH))
       .then(() => self.skipWaiting())
   )
 })
@@ -56,6 +67,26 @@ self.addEventListener("activate", (event) => {
   )
 })
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "PREFETCH") return
+  const urls = Array.isArray(event.data.urls) ? event.data.urls : []
+  event.waitUntil(prefetchUrls(urls))
+})
+
+async function prefetchUrls(urls) {
+  const cache = await caches.open(SHELL_CACHE)
+  await Promise.all(
+    urls.map(async (url) => {
+      try {
+        const response = await fetch(url, { credentials: "same-origin" })
+        if (response.ok) await cache.put(url, response)
+      } catch {
+        // A prefetch that fails is a slower click, not an error to surface.
+      }
+    })
+  )
+}
+
 function isApiRequest(url) {
   return (
     url.pathname.startsWith("/api") ||
@@ -63,7 +94,13 @@ function isApiRequest(url) {
     url.pathname.startsWith("/catalog/") ||
     url.pathname.startsWith("/orders/") ||
     url.pathname.startsWith("/wallet/") ||
-    url.pathname.startsWith("/notifications/v1")
+    url.pathname.startsWith("/notifications/v1") ||
+    url.pathname.startsWith("/reviews/") ||
+    url.pathname.startsWith("/festivals/v1") ||
+    url.pathname.startsWith("/community/v1") ||
+    url.pathname.startsWith("/marketplace/v1") ||
+    url.pathname.startsWith("/recommendations/v1") ||
+    url.pathname.startsWith("/media/v1")
   )
 }
 
@@ -78,15 +115,27 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return
   if (isApiRequest(url)) return
 
-  // Navigations: try the network, fall back to the offline page. Not to a cached
-  // copy of the route — a store page with no data behind it looks broken in a way
-  // that is harder to understand than "you are offline".
+  // Navigations: network first, then the prefetched copy, then the offline page.
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(async () => {
-        const cache = await caches.open(SHELL_CACHE)
-        return (await cache.match(OFFLINE_URL)) ?? Response.error()
-      })
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone()
+            void caches
+              .open(SHELL_CACHE)
+              .then((cache) => cache.put(request, copy))
+          }
+          return response
+        })
+        .catch(async () => {
+          const cache = await caches.open(SHELL_CACHE)
+          return (
+            (await cache.match(request)) ??
+            (await cache.match(OFFLINE_URL)) ??
+            Response.error()
+          )
+        })
     )
     return
   }

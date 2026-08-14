@@ -41,7 +41,7 @@ export function FeaturedGames() {
           variant="outline"
           className="min-h-11 gap-1.5"
           nativeButton={false}
-          render={<Link href="/browse" />}
+          render={<Link href="/browse" prefetch />}
         >
           See the whole catalogue
           <ArrowRight className="size-4" />

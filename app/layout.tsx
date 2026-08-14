@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import { Chakra_Petch, Geist_Mono, Manrope } from "next/font/google"
+import NextTopLoader from "nextjs-toploader"
 
 import { AppProviders } from "@/providers/app-providers"
 import { cn } from "@/lib/utils"
@@ -94,6 +95,14 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-dvh font-sans">
+        <NextTopLoader
+          color="#62B4F0"
+          height={2}
+          showSpinner={false}
+          shadow={false}
+          crawl
+          zIndex={9999}
+        />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

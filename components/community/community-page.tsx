@@ -16,10 +16,12 @@ import {
 import { getExploreFeed, getGameFeed, searchPosts } from "@/api/community"
 import { PostCard } from "@/components/community/post-card"
 import { PostComposer } from "@/components/community/post-composer"
+import { usePrefetchHrefs } from "@/components/pwa/prefetch-public"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useGameQuery } from "@/queries/catalog"
+import { useAuthStore } from "@/stores/auth.store"
 import { cn } from "@/lib/utils"
 import type { CursorPage } from "@/types/common.api.type"
 import type { FeedSort, Post } from "@/types/community.api.type"
@@ -35,6 +37,8 @@ const PAGE_SIZE = 20
 export function CommunityPage() {
   const searchParams = useSearchParams()
   const gameId = searchParams.get("game")
+  const userId = useAuthStore((state) => state.userId)
+  const signedIn = userId !== null
 
   const { data: game } = useGameQuery(gameId ?? "")
 
@@ -54,11 +58,6 @@ export function CommunityPage() {
       ? "game"
       : "explore"
 
-  // `useInfiniteQuery` rather than a manually-accumulated `useQuery`: each
-  // mode/sort/search combination gets its own query key, so switching between
-  // them starts a fresh page one automatically — no reset effect needed, and
-  // React Query owns the accumulated pages instead of local state fighting an
-  // effect over them.
   const feed = useInfiniteQuery<CursorPage<Post>>({
     queryKey: ["community", "feed", mode, gameId, sort, searchQuery],
     queryFn: ({ pageParam }) => {
@@ -78,9 +77,17 @@ export function CommunityPage() {
   const posts = feed.data?.pages.flatMap((page) => page.items) ?? []
   const firstLoad = feed.isPending
   const loadingMore = feed.isFetchingNextPage
+  usePrefetchHrefs(posts.map((post) => `/community/${post.id}`))
+
+  const signInNext = gameId ? `/community?game=${gameId}` : "/community"
+  const gameHref = gameId
+    ? signedIn
+      ? `/games/${gameId}`
+      : `/browse/${gameId}`
+    : null
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6">
+    <div className="mx-auto w-full max-w-2xl space-y-6 px-6 py-10 lg:px-10">
       {gameId && (
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -88,7 +95,7 @@ export function CommunityPage() {
             size="sm"
             className="-ms-2 gap-1.5"
             nativeButton={false}
-            render={<Link href="/community" />}
+            render={<Link href="/community" prefetch />}
           >
             <ArrowLeft className="size-3.5 rtl:rotate-180" />
             All communities
@@ -100,24 +107,26 @@ export function CommunityPage() {
             </span>
             &apos;s community
           </span>
-          <Button
-            variant="link"
-            size="sm"
-            nativeButton={false}
-            render={<Link href={`/games/${gameId}`} />}
-          >
-            Go to game page
-          </Button>
+          {gameHref && (
+            <Button
+              variant="link"
+              size="sm"
+              nativeButton={false}
+              render={<Link href={gameHref} prefetch />}
+            >
+              Go to game page
+            </Button>
+          )}
         </div>
       )}
 
       <div>
-        <h1 className="text-xl font-semibold">
-          {gameId ? "Game forum" : "Explore"}
+        <h1 className="font-display text-3xl font-bold sm:text-4xl">
+          {gameId ? "Game forum" : "Community"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {gameId
-            ? "Posts about this game, newest first."
+            ? "Posts about this game. Reading is public; writing needs an account."
             : "Every public post across every game — not personalised."}
         </p>
       </div>
@@ -146,14 +155,30 @@ export function CommunityPage() {
           )}
         </div>
 
-        <Button
-          size="sm"
-          className="min-h-9 gap-1.5"
-          onClick={() => setComposerOpen(true)}
-        >
-          <Plus className="size-3.5" />
-          New post
-        </Button>
+        {signedIn ? (
+          <Button
+            size="sm"
+            className="min-h-9 gap-1.5"
+            onClick={() => setComposerOpen(true)}
+          >
+            <Plus className="size-3.5" />
+            New post
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            className="min-h-9"
+            nativeButton={false}
+            render={
+              <Link
+                href={`/sign-in?next=${encodeURIComponent(signInNext)}`}
+                prefetch
+              />
+            }
+          >
+            Sign in to post
+          </Button>
+        )}
       </div>
 
       {mode !== "search" && (
@@ -220,7 +245,9 @@ export function CommunityPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "search"
               ? "Try a different word or tag."
-              : "Be the first to post."}
+              : signedIn
+                ? "Be the first to post."
+                : "Posts appear here once people write them."}
           </p>
         </div>
       )}
@@ -246,11 +273,13 @@ export function CommunityPage() {
         </div>
       )}
 
-      <PostComposer
-        open={composerOpen}
-        onOpenChange={setComposerOpen}
-        defaultGameId={gameId ?? undefined}
-      />
+      {signedIn && (
+        <PostComposer
+          open={composerOpen}
+          onOpenChange={setComposerOpen}
+          defaultGameId={gameId ?? undefined}
+        />
+      )}
     </div>
   )
 }

@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { MessageSquareText, ThumbsUp } from "lucide-react"
 
 import { ReviewCard } from "@/components/review/review-card"
 import { ReviewComposer } from "@/components/review/review-composer"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useOrdersQuery } from "@/queries/orders"
 import { useAverageRatingQuery, useGameReviewsQuery } from "@/queries/reviews"
@@ -43,7 +45,8 @@ export function GameReviews({ gameId }: Props) {
     sort_order: "desc",
     limit: 50,
   })
-  const { data: orders } = useOrdersQuery()
+  const signedIn = userId !== null
+  const { data: orders } = useOrdersQuery(signedIn)
 
   const everOwned = (orders?.items ?? []).some(
     (order) => order.game_id === gameId && EVER_OWNED_STATES.has(order.state)
@@ -95,8 +98,22 @@ export function GameReviews({ gameId }: Props) {
         </div>
       </div>
 
-      {userId !== null && everOwned && !alreadyReviewed && (
+      {signedIn && everOwned && !alreadyReviewed && (
         <ReviewComposer gameId={gameId} />
+      )}
+
+      {!signedIn && (
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+          Reviews are public. Writing one needs an account.
+          <Button
+            variant="link"
+            className="h-auto min-h-0 p-0 text-sm"
+            nativeButton={false}
+            render={<Link href={`/sign-in?next=/games/${gameId}`} prefetch />}
+          >
+            Sign in to review
+          </Button>
+        </p>
       )}
 
       {isPending && (
@@ -122,7 +139,7 @@ export function GameReviews({ gameId }: Props) {
           />
           <p className="mt-3 text-sm font-medium">No reviews yet</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {everOwned
+            {signedIn && everOwned
               ? "Be the first to say something about it."
               : "Reviews appear here once buyers write them."}
           </p>
@@ -132,7 +149,12 @@ export function GameReviews({ gameId }: Props) {
       {reviews.length > 0 && (
         <div className="space-y-3">
           {reviews.map((review) => (
-            <ReviewCard key={review.id} review={review} gameId={gameId} />
+            <ReviewCard
+              key={review.id}
+              review={review}
+              gameId={gameId}
+              readOnly={!signedIn}
+            />
           ))}
         </div>
       )}

@@ -75,7 +75,7 @@ export function FestivalDetail({ id }: Props) {
 
   if (isPending) {
     return (
-      <div className="mx-auto w-full max-w-5xl space-y-6">
+      <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10 lg:px-10">
         <Skeleton className="h-8 w-1/3" />
         <Skeleton className="h-4 w-2/3" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -89,7 +89,7 @@ export function FestivalDetail({ id }: Props) {
 
   if (isError || !festival) {
     return (
-      <div className="mx-auto max-w-md py-24 text-center">
+      <div className="mx-auto max-w-md px-6 py-24 text-center lg:px-10">
         <h1 className="text-lg font-semibold">No such festival</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           It may have been removed.
@@ -98,7 +98,7 @@ export function FestivalDetail({ id }: Props) {
           variant="outline"
           className="mt-5 min-h-11"
           nativeButton={false}
-          render={<Link href="/festivals" />}
+          render={<Link href="/festivals" prefetch />}
         >
           Back to festivals
         </Button>
@@ -110,13 +110,13 @@ export function FestivalDetail({ id }: Props) {
   const busy = start.isPending || end.isPending || cancel.isPending
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-8">
+    <div className="mx-auto w-full max-w-5xl space-y-8 px-6 py-10 lg:px-10">
       <Button
         variant="ghost"
         size="sm"
         className="-ms-2 gap-1.5"
         nativeButton={false}
-        render={<Link href="/festivals" />}
+        render={<Link href="/festivals" prefetch />}
       >
         <ArrowLeft className="size-4 rtl:rotate-180" />
         Festivals
@@ -362,7 +362,8 @@ function FestivalGameRow({
   isStaff: boolean
   editable: boolean
 }) {
-  const isOwner = useAuthStore((state) => state.userId) === game.developer_id
+  const userId = useAuthStore((state) => state.userId)
+  const isOwner = userId === game.developer_id
   const remove = useRemoveFestivalGameMutation(festival.id)
   const [proposeOpen, setProposeOpen] = useState(false)
 
@@ -378,7 +379,8 @@ function FestivalGameRow({
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-2">
         <Link
-          href={`/games/${game.game_id}`}
+          href={userId ? `/games/${game.game_id}` : `/browse/${game.game_id}`}
+          prefetch
           className="text-sm font-semibold hover:text-primary hover:underline"
         >
           {game.title}

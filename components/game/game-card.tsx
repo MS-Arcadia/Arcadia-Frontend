@@ -36,6 +36,7 @@ export function GameCard({
   return (
     <Link
       href={`${basePath}/${game.id}`}
+      prefetch
       className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/40 focus-visible:ring-3 focus-visible:ring-ring focus-visible:outline-none"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-muted">

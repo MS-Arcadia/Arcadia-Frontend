@@ -27,6 +27,8 @@ import { MAX_REVIEW_WORDS, type Review } from "@/types/review.api.type"
 interface Props {
   review: Review
   gameId: string
+  /** Signed-out visitors can read a review, not like, report or edit it. */
+  readOnly?: boolean
 }
 
 /** Requirement 1.7's max is 1000 *words*, not characters — see MAX_REVIEW_WORDS. */
@@ -34,9 +36,9 @@ function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length
 }
 
-export function ReviewCard({ review, gameId }: Props) {
+export function ReviewCard({ review, gameId, readOnly = false }: Props) {
   const userId = useAuthStore((state) => state.userId)
-  const isAuthor = userId === review.author_id
+  const isAuthor = !readOnly && userId === review.author_id
 
   const react = useReactToReviewMutation(gameId)
   const edit = useEditReviewMutation(gameId)
@@ -83,7 +85,7 @@ export function ReviewCard({ review, gameId }: Props) {
           </div>
         </div>
 
-        {isAuthor ? (
+        {readOnly ? null : isAuthor ? (
           <div className="flex shrink-0 gap-1">
             <Button
               variant="ghost"
@@ -166,30 +168,48 @@ export function ReviewCard({ review, gameId }: Props) {
       )}
 
       <div className="flex items-center gap-3 pt-1">
-        <Button
-          variant="outline"
-          size="sm"
-          className="min-h-8 gap-1.5"
-          disabled={isAuthor || react.isPending}
-          onClick={() =>
-            react.mutate({ reviewId: review.id, reactionType: "LIKE" })
-          }
-        >
-          <ThumbsUp className="size-3.5" />
-          <span className="tabular">{review.like_count}</span>
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="min-h-8 gap-1.5"
-          disabled={isAuthor || react.isPending}
-          onClick={() =>
-            react.mutate({ reviewId: review.id, reactionType: "DISLIKE" })
-          }
-        >
-          <ThumbsDown className="size-3.5" />
-          <span className="tabular">{review.dislike_count}</span>
-        </Button>
+        {readOnly ? (
+          <>
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <ThumbsUp className="size-3.5" />
+              <span className="tabular">{review.like_count}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <ThumbsDown className="size-3.5" />
+              <span className="tabular">{review.dislike_count}</span>
+            </span>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-8 gap-1.5"
+              disabled={isAuthor || react.isPending}
+              onClick={() =>
+                react.mutate({ reviewId: review.id, reactionType: "LIKE" })
+              }
+            >
+              <ThumbsUp className="size-3.5" />
+              <span className="tabular">{review.like_count}</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-8 gap-1.5"
+              disabled={isAuthor || react.isPending}
+              onClick={() =>
+                react.mutate({
+                  reviewId: review.id,
+                  reactionType: "DISLIKE",
+                })
+              }
+            >
+              <ThumbsDown className="size-3.5" />
+              <span className="tabular">{review.dislike_count}</span>
+            </Button>
+          </>
+        )}
       </div>
 
       {reporting && (

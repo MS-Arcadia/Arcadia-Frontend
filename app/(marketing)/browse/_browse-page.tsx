@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Search, X } from "lucide-react"
 
 import { GameCard } from "@/components/game/game-card"
+import { usePrefetchHrefs } from "@/components/pwa/prefetch-public"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -35,6 +36,7 @@ export function BrowsePage() {
 
   const games = data?.items ?? []
   const genres = [...new Set(games.flatMap((game) => game.genres))].slice(0, 8)
+  usePrefetchHrefs(games.map((game) => `/browse/${game.id}`))
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 px-6 py-12 lg:px-10">

@@ -15,10 +15,28 @@ export function ServiceWorkerRegistration() {
     if (!("serviceWorker" in navigator)) return
 
     const register = () => {
-      void navigator.serviceWorker.register("/sw.js").catch(() => {
-        // A failed registration costs offline support and nothing else. There is
-        // nothing useful to tell the person about it.
-      })
+      void navigator.serviceWorker
+        .register("/sw.js")
+        .then((registration) => {
+          const worker =
+            registration.active ?? navigator.serviceWorker.controller
+          worker?.postMessage({
+            type: "PREFETCH",
+            urls: [
+              "/",
+              "/browse",
+              "/festivals",
+              "/community",
+              "/sign-in",
+              "/sign-up",
+              "/offline",
+            ],
+          })
+        })
+        .catch(() => {
+          // A failed registration costs offline support and nothing else. There is
+          // nothing useful to tell the person about it.
+        })
     }
 
     // After `load`, so registration never competes with the first paint.

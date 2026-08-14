@@ -9,21 +9,24 @@ import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/stores/auth.store"
 
 /**
+ * Only what a signed-out visitor can actually open.
+ *
+ * Catalogue, festivals and community are public reads, so they live here
+ * rather than only behind the signed-in shell.
+ */
+const PUBLIC_LINKS = [
+  { href: "/browse", label: "Games" },
+  { href: "/festivals", label: "Festivals" },
+  { href: "/community", label: "Community" },
+] as const
+
+/**
  * The public header.
  *
  * The call to action depends on whether there is already a session: somebody who is
  * signed in and lands here from a bookmark wants the store, not an invitation to
  * create the account they already have.
  */
-/**
- * Only what a signed-out visitor can actually open.
- *
- * Festivals are a public read too, but the festivals screen is one page with
- * admin controls on it — a second, signed-out copy would be two implementations
- * of the same list. It belongs here once that page can serve both.
- */
-const PUBLIC_LINKS = [{ href: "/browse", label: "Games" }] as const
-
 export function MarketingHeader() {
   const userId = useAuthStore((state) => state.userId)
   const pathname = usePathname()
@@ -35,38 +38,17 @@ export function MarketingHeader() {
           <Logo priority className="w-32" />
         </Link>
 
-        {/* The public sections, in the navbar rather than reachable only by
-            guessing a URL. Catalog's list and detail reads are public by design
-            — a store page is meant to be linked and indexed — and until now the
-            only thing a visitor could do here was create an account. */}
-        <nav className="hidden items-center gap-1 md:flex">
-          {PUBLIC_LINKS.map((link) => {
-            const current =
-              pathname === link.href || pathname.startsWith(`${link.href}/`)
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={current ? "page" : undefined}
-                className={cn(
-                  "rounded-lg px-3 py-2 text-sm transition-colors",
-                  current
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {link.label}
-              </Link>
-            )
-          })}
-        </nav>
+        <PublicNav
+          pathname={pathname}
+          className="hidden items-center gap-1 md:flex"
+        />
 
         <nav className="ms-auto flex items-center gap-2">
           {userId ? (
             <Button
               className="min-h-11"
               nativeButton={false}
-              render={<Link href="/store" />}
+              render={<Link href="/store" prefetch />}
             >
               Open the store
             </Button>
@@ -76,14 +58,14 @@ export function MarketingHeader() {
                 variant="ghost"
                 className="min-h-11"
                 nativeButton={false}
-                render={<Link href="/sign-in" />}
+                render={<Link href="/sign-in" prefetch />}
               >
                 Sign in
               </Button>
               <Button
                 className="min-h-11"
                 nativeButton={false}
-                render={<Link href="/sign-up" />}
+                render={<Link href="/sign-up" prefetch />}
               >
                 Create an account
               </Button>
@@ -91,6 +73,44 @@ export function MarketingHeader() {
           )}
         </nav>
       </div>
+
+      <PublicNav
+        pathname={pathname}
+        className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-6 pb-3 md:hidden lg:px-10"
+      />
     </header>
+  )
+}
+
+function PublicNav({
+  pathname,
+  className,
+}: {
+  pathname: string
+  className?: string
+}) {
+  return (
+    <nav className={className}>
+      {PUBLIC_LINKS.map((link) => {
+        const current =
+          pathname === link.href || pathname.startsWith(`${link.href}/`)
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            prefetch
+            aria-current={current ? "page" : undefined}
+            className={cn(
+              "rounded-lg px-3 py-2 text-sm whitespace-nowrap transition-colors",
+              current
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {link.label}
+          </Link>
+        )
+      })}
+    </nav>
   )
 }

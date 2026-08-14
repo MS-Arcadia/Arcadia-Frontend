@@ -59,7 +59,7 @@ export const STAFF_NAV: NavItem[] = [
     roles: ["SUPPORT", "ADMIN"],
   },
   {
-    href: "/community/moderation",
+    href: "/community-reports",
     label: "Community reports",
     icon: MessagesSquare,
     roles: ["SUPPORT", "ADMIN"],

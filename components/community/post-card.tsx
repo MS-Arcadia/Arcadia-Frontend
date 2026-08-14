@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter } from "nextjs-toploader/app"
 import {
   Eye,
   EyeOff,
@@ -53,9 +53,10 @@ export function PostCard({
   onDeleted,
 }: Props) {
   const router = useRouter()
-  const userId = useAuthStore((state) => state.user?.user_id)
+  const userId = useAuthStore((state) => state.userId)
   const isStaff = useHasRole("SUPPORT", "ADMIN")
   const isAuthor = userId === post.author_id
+  const signedIn = userId !== null
 
   const [spoilerRevealed, setSpoilerRevealed] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -115,46 +116,48 @@ export function PostCard({
           </div>
         </div>
 
-        <div onClick={stop}>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <button
-                  type="button"
-                  aria-label="Post actions"
-                  className="flex min-h-8 min-w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                />
-              }
-            >
-              <MoreVertical className="size-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {isAuthor && (
-                <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                  <Pencil className="size-3.5" />
-                  Edit
-                </DropdownMenuItem>
-              )}
-              {(isAuthor || isStaff) && (
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() =>
-                    deletePost.mutate(post.id, { onSuccess: onDeleted })
-                  }
-                >
-                  <Trash2 className="size-3.5" />
-                  {isAuthor ? "Delete" : "Remove"}
-                </DropdownMenuItem>
-              )}
-              {!isAuthor && (
-                <DropdownMenuItem onClick={() => setReportOpen(true)}>
-                  <Flag className="size-3.5" />
-                  Report
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {signedIn ? (
+          <div onClick={stop}>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <button
+                    type="button"
+                    aria-label="Post actions"
+                    className="flex min-h-8 min-w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  />
+                }
+              >
+                <MoreVertical className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {isAuthor && (
+                  <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                    <Pencil className="size-3.5" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
+                {(isAuthor || isStaff) && (
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() =>
+                      deletePost.mutate(post.id, { onSuccess: onDeleted })
+                    }
+                  >
+                    <Trash2 className="size-3.5" />
+                    {isAuthor ? "Delete" : "Remove"}
+                  </DropdownMenuItem>
+                )}
+                {!isAuthor && (
+                  <DropdownMenuItem onClick={() => setReportOpen(true)}>
+                    <Flag className="size-3.5" />
+                    Report
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-2 space-y-3">
