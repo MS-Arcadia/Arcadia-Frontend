@@ -4,6 +4,7 @@ import { useEffect, useSyncExternalStore } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
+import { usePresence } from "@/hooks/use-presence"
 import { useMeQuery } from "@/queries/auth"
 import { useAuthStore } from "@/stores/auth.store"
 
@@ -22,6 +23,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((state) => state.user)
   const hydrated = useStoreHydrated()
   const { isLoading, isError } = useMeQuery()
+  // Held open for as long as somebody is signed in, which is exactly the span this
+  // component already owns.
+  usePresence()
 
   // Nothing is decided until the persisted store has been read back. Without this
   // the first render sees `userId: null` — persist rehydrates a tick later — and
