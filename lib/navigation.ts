@@ -20,8 +20,7 @@ export interface NavItem {
   href: string
   label: string
   icon: LucideIcon
-  /** Shown in the mobile bar. Everything else is desktop-only, because a
-   *  five-item bar on a phone is already one item too many. */
+  /** Prefer earlier placement in the mobile scroll bar. Desktop shows everything. */
   primary?: boolean
   /** Which roles see it at all. Absent means everybody. */
   roles?: Role[]
