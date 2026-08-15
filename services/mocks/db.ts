@@ -3312,10 +3312,16 @@ export function deleteCommunityComment(commentId: string): void {
 function reactionSummaryOf(postId: string) {
   const user = currentUser()
   const post = communityPostById(postId)
+  const reactions = Object.fromEntries(
+    Object.entries(post.reactions).filter(([, count]) => count > 0)
+  )
+  // Rewrite so callers never see zeroed keys, and always get a fresh object —
+  // the feed cache holds the same post reference the mock mutates in place.
+  post.reactions = reactions
   return {
     post_id: postId,
-    reactions: post.reactions,
-    total: sumReactions(post.reactions),
+    reactions: { ...reactions },
+    total: sumReactions(reactions),
     my_reaction: db.postReactions[postId]?.[user.user_id] ?? null,
   }
 }

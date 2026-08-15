@@ -27,34 +27,34 @@ interface Props {
  *
  * Signed-out visitors see the counts. Reacting is a write, so the picker stays
  * off until there is a session — a click that 401s is worse than no click.
+ *
+ * `myReaction` is also listed even when its count has not yet landed on the
+ * prop, so a brand-new emoji appears beside the picker as soon as the mutation
+ * writes the store rather than only after a remount.
  */
 export function ReactionPicker({ postId, reactions, className }: Props) {
   const signedIn = useAuthStore((state) => state.userId !== null)
   const myReaction = useCommunityReactionsStore(
     (state) => state.myReactions[postId] ?? null
   )
-  const setMyReaction = useCommunityReactionsStore((state) => state.setReaction)
   const mutation = useSetReactionMutation(postId)
 
-  const given = REACTION_EMOJI.filter((emoji) => (reactions[emoji] ?? 0) > 0)
+  const given = REACTION_EMOJI.filter(
+    (emoji) => (reactions[emoji] ?? 0) > 0 || myReaction === emoji
+  )
 
   function pick(event: React.SyntheticEvent, emoji: string) {
     event.preventDefault()
     event.stopPropagation()
     if (!signedIn || mutation.isPending) return
     const alreadyActive = myReaction === emoji
-    mutation.mutate(
-      { emoji, alreadyActive },
-      {
-        onSuccess: (summary) => setMyReaction(postId, summary.my_reaction),
-      }
-    )
+    mutation.mutate({ emoji, alreadyActive })
   }
 
   return (
     <div className={cn("flex flex-wrap items-center gap-1", className)}>
       {given.map((emoji) => {
-        const count = reactions[emoji] ?? 0
+        const count = reactions[emoji] ?? (myReaction === emoji ? 1 : 0)
         const active = signedIn && myReaction === emoji
         return (
           <button
