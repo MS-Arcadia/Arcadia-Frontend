@@ -45,7 +45,7 @@ export function PostPage({ postId }: Props) {
 
   if (isPending) {
     return (
-      <div className="mx-auto w-full max-w-2xl space-y-6 px-6 py-10 lg:px-10">
+      <div className="mx-auto w-full max-w-2xl space-y-6">
         <Skeleton className="h-48 w-full rounded-xl" />
         <Skeleton className="h-24 w-full rounded-xl" />
       </div>
@@ -54,7 +54,7 @@ export function PostPage({ postId }: Props) {
 
   if (isError || !post) {
     return (
-      <div className="mx-auto max-w-md px-6 py-24 text-center lg:px-10">
+      <div className="mx-auto max-w-md py-24 text-center">
         <h1 className="text-lg font-semibold">No such post</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           It may have been removed or deleted.
@@ -75,7 +75,7 @@ export function PostPage({ postId }: Props) {
   const loadingMore = comments.isFetchingNextPage
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 px-6 py-10 lg:px-10">
+    <div className="mx-auto w-full max-w-2xl space-y-6">
       <Button
         variant="ghost"
         size="sm"

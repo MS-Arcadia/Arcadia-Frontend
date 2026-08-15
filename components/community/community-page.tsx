@@ -87,7 +87,7 @@ export function CommunityPage() {
     : null
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 px-6 py-10 lg:px-10">
+    <div className="mx-auto w-full max-w-2xl space-y-6">
       {gameId && (
         <div className="flex flex-wrap items-center gap-2">
           <Button
