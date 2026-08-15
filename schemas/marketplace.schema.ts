@@ -4,11 +4,12 @@ import { z } from "zod"
  * Listing an item on the marketplace (requirement 1.6).
  *
  * Title max matches `market.maxTitle` (120). Description has no server-side
- * length cap — only trim — so the form does not invent one. Prices are typed
- * as digit strings, the same convention `ReviewCard` uses for a suggested
- * price: the form never touches a JS number, it converts the typed major-unit
- * digits to a minor-unit string with `BigInt` right before the request goes
- * out — see `toMinorUnits` below.
+ * length cap — only trim — so the form does not invent one. Image URL is not
+ * collected here: the dialog sends the selected game's cover via `gameArt`.
+ * Prices are typed as digit strings, the same convention `ReviewCard` uses
+ * for a suggested price: the form never touches a JS number, it converts the
+ * typed major-unit digits to a minor-unit string with `BigInt` right before
+ * the request goes out — see `toMinorUnits` below.
  */
 export const newMarketItemSchema = z.object({
   gameId: z.string().trim().min(1, "Pick a game"),
@@ -18,7 +19,6 @@ export const newMarketItemSchema = z.object({
     .min(1, "A title is required")
     .max(120, "At most 120 characters"),
   description: z.string().trim(),
-  imageUrl: z.string().trim().url("Enter a valid image URL"),
   buyPrice: z
     .string()
     .trim()

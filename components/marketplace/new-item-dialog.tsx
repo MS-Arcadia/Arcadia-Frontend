@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { gameArt } from "@/lib/game-art"
 import { useCreateItemMutation } from "@/queries/marketplace"
 import { useMyGamesQuery } from "@/queries/workflow"
 import {
@@ -53,7 +54,6 @@ export function NewItemDialog({ open, onOpenChange }: Props) {
       gameId: "",
       title: "",
       description: "",
-      imageUrl: "",
       buyPrice: "",
       sellPrice: "",
     },
@@ -79,13 +79,15 @@ export function NewItemDialog({ open, onOpenChange }: Props) {
         <form
           id="new-item"
           noValidate
-          onSubmit={form.handleSubmit((values) =>
+          onSubmit={form.handleSubmit((values) => {
+            const game = games.find((entry) => entry.id === values.gameId)
             create.mutate(
               {
                 game_id: values.gameId,
                 title: values.title,
                 description: values.description,
-                image_url: values.imageUrl,
+                // Cover art of the listed game — no separate image URL to type.
+                image_url: gameArt(game?.media ?? [])?.media_ref ?? "",
                 buy_value: toMinorUnits(values.buyPrice),
                 sell_value: toMinorUnits(values.sellPrice),
               },
@@ -96,7 +98,7 @@ export function NewItemDialog({ open, onOpenChange }: Props) {
                 },
               }
             )
-          )}
+          })}
           className="space-y-4"
         >
           <div className="space-y-2">
@@ -162,22 +164,6 @@ export function NewItemDialog({ open, onOpenChange }: Props) {
             {form.formState.errors.description && (
               <p className="text-xs text-destructive">
                 {form.formState.errors.description.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="item-image">Image URL</Label>
-            <Input
-              id="item-image"
-              placeholder="https://…"
-              className="min-h-11"
-              aria-invalid={Boolean(form.formState.errors.imageUrl)}
-              {...form.register("imageUrl")}
-            />
-            {form.formState.errors.imageUrl && (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.imageUrl.message}
               </p>
             )}
           </div>
