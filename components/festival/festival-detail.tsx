@@ -75,7 +75,7 @@ export function FestivalDetail({ id }: Props) {
 
   if (isPending) {
     return (
-      <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10 lg:px-10">
+      <div className="mx-auto w-full max-w-5xl space-y-6">
         <Skeleton className="h-8 w-1/3" />
         <Skeleton className="h-4 w-2/3" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -89,7 +89,7 @@ export function FestivalDetail({ id }: Props) {
 
   if (isError || !festival) {
     return (
-      <div className="mx-auto max-w-md px-6 py-24 text-center lg:px-10">
+      <div className="mx-auto max-w-md py-24 text-center">
         <h1 className="text-lg font-semibold">No such festival</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           It may have been removed.
@@ -110,7 +110,7 @@ export function FestivalDetail({ id }: Props) {
   const busy = start.isPending || end.isPending || cancel.isPending
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-8 px-6 py-10 lg:px-10">
+    <div className="mx-auto w-full max-w-5xl space-y-8">
       <Button
         variant="ghost"
         size="sm"

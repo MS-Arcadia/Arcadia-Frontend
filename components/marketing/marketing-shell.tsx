@@ -11,22 +11,24 @@ import { PrefetchPublicRoutes } from "@/components/pwa/prefetch-public"
 import { useAuthStore } from "@/stores/auth.store"
 
 /**
- * Public chrome by default; the signed-in app rail on community.
+ * Public chrome by default; the signed-in app rail on community and festivals.
  *
- * Community lives under `(marketing)` so unsigned visitors can read it, but once
- * there is a session the page is part of the product again — hiding the sidebar
- * there made Community the only signed-in destination without the rest of the
- * nav. Festivals stay on the public shell on purpose: they are a storefront
- * surface, not a daily workspace.
+ * Those routes live under `(marketing)` so unsigned visitors can read them, but
+ * once there is a session they are part of the product again — hiding the
+ * sidebar made them the only signed-in destinations without the rest of the
+ * nav.
  */
 export function MarketingShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const userId = useAuthStore((state) => state.userId)
   const hydrated = useStoreHydrated()
-  const onCommunity =
-    pathname === "/community" || pathname.startsWith("/community/")
+  const useAppChrome =
+    pathname === "/community" ||
+    pathname.startsWith("/community/") ||
+    pathname === "/festivals" ||
+    pathname.startsWith("/festivals/")
 
-  if (hydrated && userId && onCommunity) {
+  if (hydrated && userId && useAppChrome) {
     return (
       <div className="flex min-h-dvh">
         <AppSidebar />
