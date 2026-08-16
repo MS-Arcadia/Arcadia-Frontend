@@ -19,15 +19,19 @@ export const newMarketItemSchema = z.object({
     .min(1, "A title is required")
     .max(120, "At most 120 characters"),
   description: z.string().trim(),
+  // `abort: true` on the digit check, because Zod runs every check even after a
+  // failure: without it the refine below received "300,000" or "" and BigInt()
+  // threw a SyntaxError out of what is supposed to be a validation result —
+  // the listing form crashed instead of saying "Digits only".
   buyPrice: z
     .string()
     .trim()
-    .regex(/^\d+$/, "Digits only")
+    .regex(/^\d+$/, { message: "Digits only", abort: true })
     .refine((value) => BigInt(value) > 0n, "Enter a buy price above zero"),
   sellPrice: z
     .string()
     .trim()
-    .regex(/^\d+$/, "Digits only")
+    .regex(/^\d+$/, { message: "Digits only", abort: true })
     .refine((value) => BigInt(value) > 0n, "Enter a sell price above zero"),
 })
 
