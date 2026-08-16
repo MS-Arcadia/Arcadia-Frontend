@@ -53,7 +53,7 @@ import {
   runMatchingNow,
 } from "@/api/marketplace"
 
-import { AS_FORM_DATA, EndpointScripter } from "../../helpers/endpoint"
+import { EndpointScripter } from "../../helpers/endpoint"
 import { waitForCalls } from "../../helpers/http"
 
 const IRR = { amount_minor: "100000", currency: "IRR" }
@@ -107,7 +107,10 @@ describe("auth endpoints", () => {
 
   it("setting an avatar uploads the bytes, then posts the public url", async () => {
     const scripter = new EndpointScripter()
-    const pending = setAvatar(new File(["b"], "a.png", { type: "image/png" }), "user-1")
+    const pending = setAvatar(
+      new File(["b"], "a.png", { type: "image/png" }),
+      "user-1"
+    )
 
     await waitForCalls(scripter.calls, 1)
     expect(scripter.calls[0].request.url.endsWith(API.media.upload)).toBe(true)
@@ -123,7 +126,9 @@ describe("auth endpoints", () => {
     })
 
     await waitForCalls(scripter.calls, 2)
-    expect(scripter.calls[1].request.url.endsWith(API.auth.setAvatar)).toBe(true)
+    expect(scripter.calls[1].request.url.endsWith(API.auth.setAvatar)).toBe(
+      true
+    )
     expect(JSON.parse(scripter.calls[1].request.data as string)).toEqual({
       avatar_url: "http://minio/arcadia-media/x/x/med-1",
     })
@@ -393,10 +398,14 @@ describe("marketplace endpoints", () => {
       params: { limit: 50 },
     })
 
-    const holdings = await scripter.call(() => getHoldings("user-1"), {
-      method: "get",
-      url: API.marketplace.holdings("user-1"),
-    }, { items: [], total: 0 })
+    const holdings = await scripter.call(
+      () => getHoldings("user-1"),
+      {
+        method: "get",
+        url: API.marketplace.holdings("user-1"),
+      },
+      { items: [], total: 0 }
+    )
     expect(holdings).toEqual([])
     await scripter.call(() => runMatchingNow(), {
       method: "post",

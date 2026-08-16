@@ -105,7 +105,6 @@ describe("useRegisterMutation", () => {
         display_name: "Sam Player",
         email: "player@arcadia.local",
         password: "player-password",
-        confirm: "player-password",
       })
     })
 

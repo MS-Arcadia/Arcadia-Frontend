@@ -1,13 +1,13 @@
 import { act, renderHook } from "@testing-library/react"
 import { beforeEach, describe, expect, it } from "vitest"
 
-import {
-  useCommunityReactionsStore,
-} from "@/stores/community-reactions.store"
+import { useCommunityReactionsStore } from "@/stores/community-reactions.store"
 import { useStoreFilters } from "@/stores/store-filters.store"
 
 beforeEach(() => {
-  useCommunityReactionsStore.setState(useCommunityReactionsStore.getInitialState())
+  useCommunityReactionsStore.setState(
+    useCommunityReactionsStore.getInitialState()
+  )
   useStoreFilters.setState(useStoreFilters.getInitialState())
 })
 

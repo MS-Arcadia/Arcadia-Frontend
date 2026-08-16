@@ -23,7 +23,10 @@ describe("newGameSchema", () => {
   it.each([
     ["no title", { title: " " }],
     ["a 201-character title", { title: "x".repeat(201) }],
-    ["a description past the catalog's cap", { description: "x".repeat(10_001) }],
+    [
+      "a description past the catalog's cap",
+      { description: "x".repeat(10_001) },
+    ],
     ["requirements past the cap", { minRequirements: "x".repeat(4_001) }],
     ["a one-character genre", { genres: "A" }],
   ])("refuses %s — the service would refuse it too", (_name, overrides) => {
@@ -50,9 +53,9 @@ describe("reviewDecisionSchema", () => {
 
 describe("promotionSchema — basis points under the hood", () => {
   it("accepts a whole-percentage window between a day and ninety days", () => {
-    expect(
-      promotionSchema.safeParse({ percent: 20, days: 14 }).success
-    ).toBe(true)
+    expect(promotionSchema.safeParse({ percent: 20, days: 14 }).success).toBe(
+      true
+    )
   })
 
   it("accepts a fractional percentage, which the catalog takes", () => {

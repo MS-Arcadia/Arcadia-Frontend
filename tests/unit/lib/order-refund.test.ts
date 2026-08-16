@@ -64,15 +64,17 @@ describe("refundableOrderForGame", () => {
       refundable_until: "2020-01-01T00:00:00Z",
     })
 
-    expect(refundableOrderForGame([notYet, other, refundable, past], "game-1")).toBe(
-      refundable
-    )
+    expect(
+      refundableOrderForGame([notYet, other, refundable, past], "game-1")
+    ).toBe(refundable)
   })
 
   it("returns undefined for nothing, an empty list or no match", () => {
     expect(refundableOrderForGame(undefined, "game-1")).toBeUndefined()
     expect(refundableOrderForGame([], "game-1")).toBeUndefined()
-    expect(refundableOrderForGame([order({ game_id: "game-2" })], "game-1")).toBeUndefined()
+    expect(
+      refundableOrderForGame([order({ game_id: "game-2" })], "game-1")
+    ).toBeUndefined()
   })
 })
 

@@ -148,8 +148,8 @@ describe("arithmetic", () => {
   it("divides by truncating — the caller owns the remainder", () => {
     // 1000.00 split three ways is 333.33 each; the extra minor unit is the
     // last instalment's problem, exactly as the order service does it.
-    expect(
-      divideMinor({ amount_minor: "100000", currency: "IRR" }, 3)
-    ).toEqual({ amount_minor: "33333", currency: "IRR" })
+    expect(divideMinor({ amount_minor: "100000", currency: "IRR" }, 3)).toEqual(
+      { amount_minor: "33333", currency: "IRR" }
+    )
   })
 })

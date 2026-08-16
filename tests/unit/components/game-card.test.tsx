@@ -27,7 +27,9 @@ describe("GameCard", () => {
     expect(screen.getByText("In library")).toBeInTheDocument()
 
     rerender(
-      <GameCard game={makeGame({ state: "PREORDER", release_at: "2026-09-01" })} />
+      <GameCard
+        game={makeGame({ state: "PREORDER", release_at: "2026-09-01" })}
+      />
     )
     expect(screen.getByText("Pre-order")).toBeInTheDocument()
   })

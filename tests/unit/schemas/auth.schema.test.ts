@@ -15,7 +15,11 @@ describe("signInSchema", () => {
   it.each([
     ["empty email", { email: "", password: "x" }, "email"],
     ["not an email", { email: "player", password: "x" }, "email"],
-    ["missing password", { email: "player@arcadia.local", password: "" }, "password"],
+    [
+      "missing password",
+      { email: "player@arcadia.local", password: "" },
+      "password",
+    ],
   ])("rejects %s on %s", (_name, body, field) => {
     const result = signInSchema.safeParse(body)
     expect(result.success).toBe(false)
@@ -40,7 +44,11 @@ describe("signUpSchema", () => {
 
   it.each([
     ["a one-character display name", { displayName: "S" }, "displayName"],
-    ["a 65-character display name", { displayName: "x".repeat(65) }, "displayName"],
+    [
+      "a 65-character display name",
+      { displayName: "x".repeat(65) },
+      "displayName",
+    ],
     ["a seven-character password", { password: "sevench" }, "password"],
     ["a 129-character password", { password: "x".repeat(129) }, "password"],
     ["a mismatched confirm", { confirm: "different" }, "confirm"],

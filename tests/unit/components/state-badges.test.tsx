@@ -19,9 +19,7 @@ describe("GameStateBadge", () => {
       PUBLISHED: "On sale",
     }
     for (const [state, label] of Object.entries(expected)) {
-      const { unmount } = render(
-        <GameStateBadge state={state as GameState} />
-      )
+      const { unmount } = render(<GameStateBadge state={state as GameState} />)
       expect(screen.getByText(label)).toBeInTheDocument()
       expect(stateLabel(state as GameState)).toBe(label)
       unmount()
@@ -44,9 +42,7 @@ describe("FestivalStateBadge", () => {
       ["CANCELLED", "Cancelled"],
     ]
     for (const [state, label] of cases) {
-      const { unmount } = render(
-        <FestivalStateBadge state={state as never} />
-      )
+      const { unmount } = render(<FestivalStateBadge state={state as never} />)
       expect(screen.getByText(label)).toBeInTheDocument()
       unmount()
     }

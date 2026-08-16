@@ -2,7 +2,7 @@ import { act, waitFor } from "@testing-library/react"
 import { toast } from "sonner"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { getGame, getGames } from "@/api/catalog"
+import { getGame } from "@/api/catalog"
 import { walletKeys } from "@/api/wallet"
 import type { Money } from "@/types/common.api.type"
 
@@ -30,20 +30,14 @@ vi.mock("@/api/notifications", async (importOriginal) => ({
 }))
 
 import { getGames as getGamesMock } from "@/api/catalog"
-import {
-  initiateCharge,
-  redeemGiftCard,
-} from "@/api/wallet"
-import {
-  useGamesQuery,
-  useOwnedGamesQuery,
-} from "@/queries/catalog"
+import { initiateCharge, redeemGiftCard } from "@/api/wallet"
+import { useGamesQuery, useOwnedGamesQuery } from "@/queries/catalog"
 import {
   useInitiateChargeMutation,
   useRedeemGiftCardMutation,
 } from "@/queries/wallet"
 
-import { makeGame } from "../../helpers/game"
+import { makeGame, makeGameDetail } from "../../helpers/game"
 import { renderHookWithQuery } from "../../helpers/query"
 
 const IRR: Money = { amount_minor: "500000", currency: "IRR" }
@@ -81,7 +75,7 @@ describe("useGamesQuery", () => {
 describe("useOwnedGamesQuery", () => {
   it("combines per-game queries into a map, pending until all answer", async () => {
     vi.mocked(getGame).mockImplementation(async (id: string) =>
-      makeGame({ id, title: `Game ${id}` })
+      makeGameDetail({ id, title: `Game ${id}` })
     )
 
     const { result } = renderHookWithQuery(() =>

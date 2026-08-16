@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  NAV_ITEMS,
-  STAFF_NAV,
-  isCurrent,
-  navFor,
-} from "@/lib/navigation"
+import { NAV_ITEMS, STAFF_NAV, isCurrent, navFor } from "@/lib/navigation"
 
 describe("navFor", () => {
   it("no role means no staff navigation at all", () => {

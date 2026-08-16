@@ -2,8 +2,6 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import type { Order } from "@/types/order.api.type"
-
 const mutate = vi.fn()
 
 vi.mock("@/queries/orders", () => ({
@@ -42,13 +40,17 @@ describe("RefundButton", () => {
     expect(
       await screen.findByText(/720,000 IRR goes back to your wallet/)
     ).toBeInTheDocument()
-    expect(await screen.findByText(/You have \d+h \d+m left/)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/You have \d+h \d+m left/)
+    ).toBeInTheDocument()
   })
 
   it("an instalment order is told what happens to its remaining payments", async () => {
     const user = userEvent.setup()
     render(
-      <RefundButton order={makeOrder({ state: "PAYING", game_title: "Iron Bloom" })} />
+      <RefundButton
+        order={makeOrder({ state: "PAYING", game_title: "Iron Bloom" })}
+      />
     )
 
     await user.click(screen.getByRole("button", { name: "Refund" }))
@@ -62,7 +64,9 @@ describe("RefundButton", () => {
     const user = userEvent.setup()
     render(
       <RefundButton
-        order={makeOrder({ refundable_until: new Date(Date.now() - 1000).toISOString() })}
+        order={makeOrder({
+          refundable_until: new Date(Date.now() - 1000).toISOString(),
+        })}
       />
     )
 

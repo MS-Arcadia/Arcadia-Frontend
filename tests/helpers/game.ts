@@ -1,5 +1,5 @@
 import type { Money } from "@/types/common.api.type"
-import type { Game, GameState } from "@/types/catalog.api.type"
+import type { Game, GameDetail, GameState } from "@/types/catalog.api.type"
 
 function irr(major: number): Money {
   return { amount_minor: String(BigInt(major) * 100n), currency: "IRR" }
@@ -31,6 +31,13 @@ export function makeGame(overrides: Partial<Game> = {}): Game {
     published_at: "2026-01-02T00:00:00Z",
     ...overrides,
   }
+}
+
+/** A GameDetail is a Game plus the relations the detail endpoint inlines. */
+export function makeGameDetail(
+  overrides: Partial<GameDetail> = {}
+): GameDetail {
+  return { ...makeGame(overrides), reviews: [], promotions: [], ...overrides }
 }
 
 export { irr as majorIrr }

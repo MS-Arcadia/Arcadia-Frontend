@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  newMarketItemSchema,
-  toMinorUnits,
-} from "@/schemas/marketplace.schema"
+import { newMarketItemSchema, toMinorUnits } from "@/schemas/marketplace.schema"
 
 const valid = {
   gameId: "game-1",
@@ -22,15 +19,15 @@ describe("newMarketItemSchema", () => {
     expect(
       newMarketItemSchema.safeParse({ ...valid, buyPrice: "300,000" }).success
     ).toBe(false)
-    expect(newMarketItemSchema.safeParse({ ...valid, sellPrice: "" }).success).toBe(
-      false
-    )
+    expect(
+      newMarketItemSchema.safeParse({ ...valid, sellPrice: "" }).success
+    ).toBe(false)
   })
 
   it("refuses a zero or negative price", () => {
-    expect(newMarketItemSchema.safeParse({ ...valid, buyPrice: "0" }).success).toBe(
-      false
-    )
+    expect(
+      newMarketItemSchema.safeParse({ ...valid, buyPrice: "0" }).success
+    ).toBe(false)
     expect(
       newMarketItemSchema.safeParse({ ...valid, sellPrice: "-5" }).success
     ).toBe(false)
@@ -38,11 +35,12 @@ describe("newMarketItemSchema", () => {
 
   it("the title obeys market.maxTitle (120), and no game picked is refused", () => {
     expect(
-      newMarketItemSchema.safeParse({ ...valid, title: "x".repeat(121) }).success
+      newMarketItemSchema.safeParse({ ...valid, title: "x".repeat(121) })
+        .success
     ).toBe(false)
-    expect(newMarketItemSchema.safeParse({ ...valid, gameId: " " }).success).toBe(
-      false
-    )
+    expect(
+      newMarketItemSchema.safeParse({ ...valid, gameId: " " }).success
+    ).toBe(false)
   })
 })
 

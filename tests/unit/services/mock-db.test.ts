@@ -65,24 +65,24 @@ describe("sign-in rules", () => {
   })
 
   it("an email is matched case-insensitively and trimmed", () => {
-    expect(
-      signIn("  Player@Arcadia.Local ", "player-password").user_id
-    ).toBe(PLAYER_ID)
+    expect(signIn("  Player@Arcadia.Local ", "player-password").user_id).toBe(
+      PLAYER_ID
+    )
   })
 
   it("a pending registration cannot sign in yet", () => {
-    expect(ruleOf(() => signIn("hopeful@arcadia.local", "hopeful-password"))).toBe(
-      "403:ACCOUNT_PENDING"
-    )
+    expect(
+      ruleOf(() => signIn("hopeful@arcadia.local", "hopeful-password"))
+    ).toBe("403:ACCOUNT_PENDING")
   })
 
   it("a banned account is refused", () => {
     signIn("admin@arcadia.com", "admin-password")
     setBanned(PLAYER_ID, true, "test ban")
     signOut()
-    expect(ruleOf(() => signIn("player@arcadia.local", "player-password"))).toBe(
-      "403:ACCOUNT_BANNED"
-    )
+    expect(
+      ruleOf(() => signIn("player@arcadia.local", "player-password"))
+    ).toBe("403:ACCOUNT_BANNED")
   })
 
   it("with no session, currentUser is 401 TOKEN_MISSING", () => {
@@ -186,7 +186,10 @@ describe("gifting and refunds", () => {
 
   it("somebody else's order is a 404, not a refusal reason", () => {
     signIn("support@arcadia.local", "support-password")
-    walletOf(SUPPORT_ID).balance = { amount_minor: "100000000", currency: "IRR" }
+    walletOf(SUPPORT_ID).balance = {
+      amount_minor: "100000000",
+      currency: "IRR",
+    }
     const foreign = buy(gameId("Paper Kingdoms"))
     signIn("player@arcadia.local", "player-password")
     expect(ruleOf(() => refund(foreign.id))).toBe("404:NOT_FOUND")

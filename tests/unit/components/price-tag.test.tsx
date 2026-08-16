@@ -51,7 +51,12 @@ describe("PriceTag", () => {
 
   it("falls back to final_price when effective_price is absent", () => {
     render(
-      <PriceTag game={makeGame({ effective_price: null, final_price: majorIrr(410_000) })} />
+      <PriceTag
+        game={makeGame({
+          effective_price: null,
+          final_price: majorIrr(410_000),
+        })}
+      />
     )
     expect(screen.getByText("410,000 IRR")).toBeInTheDocument()
   })

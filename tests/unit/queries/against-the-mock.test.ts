@@ -1,4 +1,4 @@
-import { waitFor } from "@testing-library/react"
+import { configure, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it } from "vitest"
 
 import * as mock from "@/services/mocks/db"
@@ -7,6 +7,12 @@ import { PLAYER_ID } from "@/services/mocks/seed"
 
 import { useAuthStore } from "@/stores/auth.store"
 import { renderHookWithQuery } from "../../helpers/query"
+
+// Every answer here crosses the mock adapter's ~180ms latency, and a query
+// that chains requests stacks it. waitFor's 1s default is comfortable on a
+// laptop and tight on a shared CI runner, so this file waits longer. The
+// configure call is scoped to this file's isolated module registry.
+configure({ asyncUtilTimeout: 5000 })
 
 /**
  * The remaining read hooks, exercised against the real mock backend.
@@ -27,8 +33,11 @@ describe("notifications", () => {
     // Make sure there is something to read.
     mock.buy(mock.db.games.find((game) => game.title === "Paper Kingdoms")!.id)
 
-    const { useMarkAllReadMutation, useNotificationsQuery, useUnreadCountQuery } =
-      await import("@/queries/notifications")
+    const {
+      useMarkAllReadMutation,
+      useNotificationsQuery,
+      useUnreadCountQuery,
+    } = await import("@/queries/notifications")
 
     const list = renderHookWithQuery(() => useNotificationsQuery())
     await waitFor(() => expect(list.result.current.isSuccess).toBe(true))
@@ -40,9 +49,12 @@ describe("notifications", () => {
 
     const mutation = renderHookWithQuery(() => useMarkAllReadMutation())
     mutation.result.current.mutate()
-    await waitFor(() => {
-      expect(mutation.result.current.isSuccess).toBe(true)
-    }, { timeout: 3000 })
+    await waitFor(
+      () => {
+        expect(mutation.result.current.isSuccess).toBe(true)
+      },
+      { timeout: 3000 }
+    )
 
     const after = renderHookWithQuery(() => useUnreadCountQuery())
     await waitFor(() => expect(after.result.current.isSuccess).toBe(true))
@@ -61,13 +73,10 @@ describe("reviews", () => {
       sentiment: "LIKE",
     })
 
-    const { useAverageRatingQuery, useGameReviewsQuery } = await import(
-      "@/queries/reviews"
-    )
+    const { useAverageRatingQuery, useGameReviewsQuery } =
+      await import("@/queries/reviews")
 
-    const reviews = renderHookWithQuery(() =>
-      useGameReviewsQuery(game.id, {})
-    )
+    const reviews = renderHookWithQuery(() => useGameReviewsQuery(game.id, {}))
     await waitFor(() => expect(reviews.result.current.isSuccess).toBe(true))
     expect(reviews.result.current.data?.reviews.length).toBeGreaterThan(0)
 
@@ -81,9 +90,8 @@ describe("reviews", () => {
 
 describe("festivals", () => {
   it("lists the seeded festivals and fetches one by id", async () => {
-    const { useFestivalQuery, useFestivalsQuery } = await import(
-      "@/queries/festivals"
-    )
+    const { useFestivalQuery, useFestivalsQuery } =
+      await import("@/queries/festivals")
 
     const list = renderHookWithQuery(() => useFestivalsQuery({}))
     await waitFor(() => expect(list.result.current.isSuccess).toBe(true))
@@ -102,9 +110,8 @@ describe("recommendations", () => {
       (candidate) => candidate.state === "PUBLISHED"
     )!
 
-    const { useMyRecommendationsQuery, useSimilarGamesQuery } = await import(
-      "@/queries/recommendations"
-    )
+    const { useMyRecommendationsQuery, useSimilarGamesQuery } =
+      await import("@/queries/recommendations")
 
     const mine = renderHookWithQuery(() => useMyRecommendationsQuery(5))
     await waitFor(() => expect(mine.result.current.isSuccess).toBe(true))
@@ -119,9 +126,8 @@ describe("community", () => {
   it("reads the explore feed and a post with its comments", async () => {
     const post = mock.db.posts[0]
 
-    const { useCommentsQuery, useExploreFeedQuery, usePostQuery } = await import(
-      "@/queries/community"
-    )
+    const { useCommentsQuery, useExploreFeedQuery, usePostQuery } =
+      await import("@/queries/community")
 
     const feed = renderHookWithQuery(() => useExploreFeedQuery({}))
     await waitFor(() => expect(feed.result.current.isSuccess).toBe(true))
@@ -142,8 +148,12 @@ describe("marketplace", () => {
     // signIn on the mock db alone doesn't populate it.
     useAuthStore.setState({ userId: PLAYER_ID })
 
-    const { useHoldingsQuery, useItemsQuery, useMyOrdersQuery, useMyTradesQuery } =
-      await import("@/queries/marketplace")
+    const {
+      useHoldingsQuery,
+      useItemsQuery,
+      useMyOrdersQuery,
+      useMyTradesQuery,
+    } = await import("@/queries/marketplace")
 
     const items = renderHookWithQuery(() => useItemsQuery({}))
     await waitFor(() => expect(items.result.current.isSuccess).toBe(true))
@@ -161,9 +171,8 @@ describe("marketplace", () => {
 
 describe("profiles", () => {
   it("reads a public profile and resolves its library into games", async () => {
-    const { useProfileGamesQuery, usePublicProfileQuery } = await import(
-      "@/queries/profile"
-    )
+    const { useProfileGamesQuery, usePublicProfileQuery } =
+      await import("@/queries/profile")
 
     const profile = renderHookWithQuery(() => usePublicProfileQuery(PLAYER_ID))
     await waitFor(() => expect(profile.result.current.isSuccess).toBe(true))

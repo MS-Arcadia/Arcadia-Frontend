@@ -45,9 +45,10 @@ describe("useBuyGameMutation", () => {
       await result.current.mutateAsync({ game_id: "game-1" })
     })
 
-    const invalidated = invalidate.mock.calls.map(([entry]) =>
-      Array.isArray(entry.queryKey) ? entry.queryKey.join(".") : entry.queryKey
-    )
+    const invalidated = invalidate.mock.calls.map(([entry]) => {
+      const key = entry?.queryKey
+      return Array.isArray(key) ? key.join(".") : key
+    })
     expect(invalidated).toEqual(
       expect.arrayContaining([
         walletKeys.all.join("."),

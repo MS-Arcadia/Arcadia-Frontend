@@ -23,10 +23,21 @@ import { AuthGuard } from "@/components/auth/auth-guard"
 
 const CONTENT = <p data-testid="children">The signed-in shell</p>
 
+/** Only the fields AuthGuard reads; the rest of TanStack's result object is
+ *  noise the component never touches, so it is filled in by the cast. */
 function queryResult(
-  overrides: Partial<{ isLoading: boolean; isError: boolean; error: unknown }>
+  overrides: Partial<{
+    isLoading: boolean
+    isError: boolean
+    error: Error | null
+  }> = {}
 ) {
-  return { isLoading: false, isError: false, error: null, ...overrides }
+  return {
+    isLoading: false,
+    isError: false,
+    error: null,
+    ...overrides,
+  } as ReturnType<typeof useMeQuery>
 }
 
 beforeEach(() => {

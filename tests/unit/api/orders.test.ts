@@ -16,14 +16,14 @@ import {
   refundOrder,
 } from "@/api/orders"
 
-import { useScriptedHttp, waitForCalls } from "../../helpers/http"
+import { scriptedHttp, waitForCalls } from "../../helpers/http"
 import { makeOrder } from "../../helpers/order"
 
 const BODY = { game_id: "game-1" }
 
 describe("reading orders", () => {
   it("lists with a limit of fifty, and fetches one by id", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
 
     const list = getOrders()
     await waitForCalls(calls, 1)
@@ -43,7 +43,7 @@ describe("reading orders", () => {
 
 describe("placing orders waits for the saga", () => {
   it("a 202 that lands COMPLETED on the first poll resolves with the settled order", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
 
     const pending = placeOrder(BODY)
     await waitForCalls(calls, 1)
@@ -59,7 +59,7 @@ describe("placing orders waits for the saga", () => {
   })
 
   it("keeps polling with a growing backoff until the state is decided", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
 
     const pending = placeOrder(BODY)
     await waitForCalls(calls, 1)
@@ -77,9 +77,13 @@ describe("placing orders waits for the saga", () => {
   })
 
   it("a gift's 202 and a pre-order's 202 settle the same way", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
 
-    const gift = placeGift({ ...BODY, recipient_id: "friend", message: "enjoy" })
+    const gift = placeGift({
+      ...BODY,
+      recipient_id: "friend",
+      message: "enjoy",
+    })
     await waitForCalls(calls, 1)
     expect(calls[0].request.url.endsWith(API.orders.gift)).toBe(true)
     calls[0].respond({ status: 202, data: makeOrder({ state: "PENDING" }) })
@@ -113,7 +117,7 @@ describe("placing orders waits for the saga", () => {
 
 describe("refunds wait for the wallet too", () => {
   it("REFUNDING is polled until it is REFUNDED", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
 
     const pending = refundOrder("order-1")
     await waitForCalls(calls, 1)
@@ -129,7 +133,7 @@ describe("refunds wait for the wallet too", () => {
   })
 
   it("an immediate REFUNDED answer resolves without polling", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
 
     const pending = refundOrder("order-1")
     await waitForCalls(calls, 1)

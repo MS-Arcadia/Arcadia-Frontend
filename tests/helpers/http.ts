@@ -38,7 +38,9 @@ export interface ScriptedCall {
   }): void
 }
 
-export function useScriptedHttp(): ScriptedCall[] {
+/** Not a hook — installs a scripted adapter on the shared axios instance and
+ *  returns the calls it captures. */
+export function scriptedHttp(): ScriptedCall[] {
   const calls: ScriptedCall[] = []
 
   const adapter: AxiosAdapter = (config: InternalAxiosRequestConfig) =>
@@ -53,11 +55,7 @@ export function useScriptedHttp(): ScriptedCall[] {
           params: config.params,
           data: config.data,
         },
-        respond: ({
-          status = 200,
-          data = {},
-          headers = {},
-        } = {}) => {
+        respond: ({ status = 200, data = {}, headers = {} } = {}) => {
           resolve({ status, statusText: String(status), data, headers, config })
         },
         reject: ({ status, reason, detail, field, code }) => {

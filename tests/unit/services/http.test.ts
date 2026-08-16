@@ -13,11 +13,14 @@ vi.mock("@/services/mocks/adapter", () => ({
 
 import { toApiError, http } from "@/services/http"
 
-import { useScriptedHttp, waitForCalls } from "../../helpers/http"
+import { scriptedHttp, waitForCalls } from "../../helpers/http"
 import { fakeJwt } from "../../helpers/tokens"
 
 const PAIR = {
-  access_token: fakeJwt({ sub: "u1", exp: Math.floor(Date.now() / 1000) + 3600 }),
+  access_token: fakeJwt({
+    sub: "u1",
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  }),
   refresh_token: "mock.u1.refresh",
   token_type: "bearer",
 }
@@ -36,13 +39,15 @@ describe("toApiError", () => {
   })
 
   it("an axios error with no response is NETWORK, or TIMEOUT when aborted", () => {
-    expect(toApiError(new AxiosError("Network Error", undefined))).toMatchObject({
+    expect(
+      toApiError(new AxiosError("Network Error", undefined))
+    ).toMatchObject({
       status: 0,
       reason: "NETWORK",
     })
-    expect(
-      toApiError(new AxiosError("timeout", "ECONNABORTED"))
-    ).toMatchObject({ status: 0, reason: "TIMEOUT" })
+    expect(toApiError(new AxiosError("timeout", "ECONNABORTED"))).toMatchObject(
+      { status: 0, reason: "TIMEOUT" }
+    )
   })
 
   it("maps a known RFC 7807 reason to its message", () => {
@@ -98,7 +103,7 @@ describe("toApiError", () => {
 
 describe("request interceptors", () => {
   it("attaches the stored access token as a bearer", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
     saveSession(PAIR)
 
     const pending = http.get("/catalog/v1/games")
@@ -112,7 +117,7 @@ describe("request interceptors", () => {
   })
 
   it("mints an Idempotency-Key on writes only — the services refuse money-moving calls without one", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
 
     const post = http.post(API.orders.place, { game_id: "g1" })
     await waitForCalls(calls, 1)
@@ -145,12 +150,14 @@ describe("request interceptors", () => {
     expect(calls[4].request.headers["Idempotency-Key"]).toBeUndefined()
 
     // Each write minted its own key.
-    const keys = [0, 1, 2, 3].map((index) => calls[index].request.headers["Idempotency-Key"])
+    const keys = [0, 1, 2, 3].map(
+      (index) => calls[index].request.headers["Idempotency-Key"]
+    )
     expect(new Set(keys).size).toBe(4)
   })
 
   it("an existing Idempotency-Key is kept, so a retry carries the same one", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
 
     const pending = http.post(
       "/wallet/v1/wallets/me/charges",
@@ -172,7 +179,7 @@ describe("request interceptors", () => {
   ])(
     "credential exchange (%s) carries no Authorization — the gateway would 401 an expired token at the edge",
     async (_name, url) => {
-      const calls = useScriptedHttp()
+      const calls = scriptedHttp()
       saveSession(PAIR)
 
       const pending = http.post(url, {})
@@ -200,7 +207,7 @@ describe("token refresh", () => {
   }
 
   it("a token inside the one-minute skew is refreshed before the call goes out", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
     const expiring = saveExpiringToken(30)
 
     const pending = http.get("/catalog/v1/games")
@@ -215,11 +222,13 @@ describe("token refresh", () => {
     expect(calls[1].request.headers.Authorization).toBe(
       `Bearer ${PAIR.access_token}`
     )
-    expect(calls[1].request.headers.Authorization).not.toBe(`Bearer ${expiring}`)
+    expect(calls[1].request.headers.Authorization).not.toBe(
+      `Bearer ${expiring}`
+    )
   })
 
   it("a healthy token is not refreshed", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
     saveExpiringToken(3600)
 
     const pending = http.get("/catalog/v1/games")
@@ -231,7 +240,7 @@ describe("token refresh", () => {
   })
 
   it("a failed refresh clears the session and the original call still goes out", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
     saveExpiringToken(30)
 
     const pending = http.get("/catalog/v1/games")
@@ -245,7 +254,7 @@ describe("token refresh", () => {
   })
 
   it("one refresh is shared by every caller that noticed the dead token", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
     saveExpiringToken(30)
 
     const first = http.get("/catalog/v1/games")
@@ -269,7 +278,7 @@ describe("token refresh", () => {
 
 describe("response interceptor", () => {
   it("a 401 is retried once with the refreshed token and then succeeds", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
     saveSession(PAIR)
 
     const pending = http.get("/catalog/v1/games")
@@ -292,7 +301,7 @@ describe("response interceptor", () => {
   })
 
   it("a 401 with no refresh token available rejects without retrying", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
 
     const pending = http.get("/catalog/v1/games")
     const rejection = expect(pending).rejects.toBeTruthy()
@@ -304,7 +313,7 @@ describe("response interceptor", () => {
   })
 
   it("a 401 on the retry itself does not loop", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
     saveSession(PAIR)
 
     const pending = http.get("/catalog/v1/games")
@@ -323,7 +332,7 @@ describe("response interceptor", () => {
   })
 
   it("a failed write toasts the mapped message once", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
     const error = vi.spyOn(toast, "error")
 
     const pending = http.post(API.orders.place, { game_id: "g1" })
@@ -337,7 +346,7 @@ describe("response interceptor", () => {
   })
 
   it("a failed read stays silent — every reading screen has its own empty state", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
     const error = vi.spyOn(toast, "error")
 
     const pending = http.get("/catalog/v1/games")
@@ -350,7 +359,7 @@ describe("response interceptor", () => {
   })
 
   it("401 and 404 writes are silent too", async () => {
-    const calls = useScriptedHttp()
+    const calls = scriptedHttp()
     const error = vi.spyOn(toast, "error")
 
     const unauthorised = http.post(API.orders.place, {})

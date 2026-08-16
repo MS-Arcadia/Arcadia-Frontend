@@ -140,7 +140,9 @@ describe("workflow endpoints", () => {
     })
 
     await waitForCalls(scripter.calls, 2)
-    expect(scripter.calls[1].request.url.endsWith(API.catalog.media("game-1"))).toBe(true)
+    expect(
+      scripter.calls[1].request.url.endsWith(API.catalog.media("game-1"))
+    ).toBe(true)
     expect(JSON.parse(scripter.calls[1].request.data as string)).toEqual({
       kind: "TEASER",
       media_ref: "http://minio/arcadia-media/y/y/med-2",

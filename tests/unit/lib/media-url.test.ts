@@ -99,23 +99,22 @@ describe("publicAssetUrl", () => {
 })
 
 describe("gameArt", () => {
-  const teaser: GameMedia = {
-    // The GameMedia shape's exact optional fields do not matter to the picker;
-    // cast a minimal stand-in rather than transcribing the whole DTO.
-    media_ref: "/covers/teaser.svg",
-    kind: "TEASER",
-  } as GameMedia
-  const screenshot: GameMedia = {
-    media_ref: "https://api.arcadia.example/media/v1/media/zz9/content",
-    kind: "SCREENSHOT",
-  } as GameMedia
+  // A wire-shaped media entry — `MediaKind` is TEASER or IMAGE, nothing else.
+  function media(kind: GameMedia["kind"], ref: string): GameMedia {
+    return { id: `media-${kind}`, kind, media_ref: ref, position: 0 }
+  }
+  const teaser = media("TEASER", "/covers/teaser.svg")
+  const screenshot = media(
+    "IMAGE",
+    "https://api.arcadia.example/media/v1/media/zz9/content"
+  )
 
   it("prefers the TEASER — catalog's own definition of a game's cover", () => {
     expect(gameArt([screenshot, teaser])).toMatchObject({ kind: "TEASER" })
   })
 
   it("falls back to the first item when there is no teaser, rather than none", () => {
-    expect(gameArt([screenshot])).toMatchObject({ kind: "SCREENSHOT" })
+    expect(gameArt([screenshot])).toMatchObject({ kind: "IMAGE" })
   })
 
   it("returns undefined for empty media", () => {

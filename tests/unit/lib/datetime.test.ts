@@ -82,8 +82,12 @@ describe("formatRelative", () => {
 describe("timeUntil", () => {
   it("counts down in minutes, hours+minutes, then days", () => {
     expect(timeUntil(new Date(NOW + 5 * 60_000).toISOString())).toBe("5m")
-    expect(timeUntil(new Date(NOW + 3 * 3_600_000 + 24 * 60_000).toISOString())).toBe("3h 24m")
-    expect(timeUntil(new Date(NOW + 2 * 86_400_000).toISOString())).toBe("2 days")
+    expect(
+      timeUntil(new Date(NOW + 3 * 3_600_000 + 24 * 60_000).toISOString())
+    ).toBe("3h 24m")
+    expect(timeUntil(new Date(NOW + 2 * 86_400_000).toISOString())).toBe(
+      "2 days"
+    )
     expect(timeUntil(new Date(NOW + 86_400_000).toISOString())).toBe("1 day")
   })
 

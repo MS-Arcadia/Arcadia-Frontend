@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest"
+import { describe, it, vi } from "vitest"
 
 vi.mock("@/services/mocks/adapter", () => ({
   installMockAdapter: vi.fn(),
@@ -68,14 +68,11 @@ describe("community endpoints", () => {
       params: { cursor: "abc" },
     })
 
-    await scripter.call(
-      () => searchPosts("neon", { limit: 5, cursor: null }),
-      {
-        method: "get",
-        url: API.community.search,
-        params: { q: "neon", limit: 5, cursor: null },
-      }
-    )
+    await scripter.call(() => searchPosts("neon", { limit: 5, cursor: null }), {
+      method: "get",
+      url: API.community.search,
+      params: { q: "neon", limit: 5, cursor: null },
+    })
 
     await scripter.call(() => getPost("post-1"), {
       method: "get",
@@ -99,7 +96,11 @@ describe("community endpoints", () => {
           spoiler: true,
           tags: ["alpha"],
         }),
-      { method: "post", url: API.community.createPostMultipart, body: AS_FORM_DATA }
+      {
+        method: "post",
+        url: API.community.createPostMultipart,
+        body: AS_FORM_DATA,
+      }
     )
 
     await scripter.call(() => createPost({ game_id: "game-1" }), {
@@ -192,14 +193,11 @@ describe("community endpoints", () => {
       params: { status: "open", limit: 20 },
     })
 
-    await scripter.call(
-      () => resolveReport("report-1", "DISMISS", "checked"),
-      {
-        method: "post",
-        url: API.community.resolveReport("report-1"),
-        body: { action: "DISMISS", note: "checked" },
-      }
-    )
+    await scripter.call(() => resolveReport("report-1", "DISMISS", "checked"), {
+      method: "post",
+      url: API.community.resolveReport("report-1"),
+      body: { action: "DISMISS", note: "checked" },
+    })
   })
 })
 
@@ -209,7 +207,11 @@ describe("review endpoints", () => {
 
     await scripter.call(
       () =>
-        createReview({ game_id: "game-1", text: "loved it", sentiment: "LIKE" }),
+        createReview({
+          game_id: "game-1",
+          text: "loved it",
+          sentiment: "LIKE",
+        }),
       {
         method: "post",
         url: "/reviews/api/reviews/",
@@ -222,7 +224,8 @@ describe("review endpoints", () => {
     const scripter = new EndpointScripter()
 
     await scripter.call(
-      () => getGameReviews("game-1", { sort_by: "created_at", sort_order: "desc" }),
+      () =>
+        getGameReviews("game-1", { sort_by: "created_at", sort_order: "desc" }),
       {
         method: "get",
         url: API.reviews.forGame("game-1"),

@@ -44,7 +44,9 @@ describe("ls", () => {
 
   it("a JSON stringification of null still reads back as null, not the fallback", () => {
     ls.set(STORAGE_KEYS.accessToken, null)
-    expect(ls.get<string | null>(STORAGE_KEYS.accessToken, "fallback")).toBeNull()
+    expect(
+      ls.get<string | null>(STORAGE_KEYS.accessToken, "fallback")
+    ).toBeNull()
   })
 })
 

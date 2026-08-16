@@ -1,6 +1,6 @@
 import { expect } from "vitest"
 
-import { useScriptedHttp, waitForCalls, type ScriptedCall } from "./http"
+import { scriptedHttp, waitForCalls, type ScriptedCall } from "./http"
 
 /** Pass as `body` when the request should carry a multipart FormData. */
 export const AS_FORM_DATA = Symbol("form-data")
@@ -16,7 +16,7 @@ export class EndpointScripter {
   private next = 0
 
   constructor() {
-    this.calls = useScriptedHttp()
+    this.calls = scriptedHttp()
   }
 
   async call(
