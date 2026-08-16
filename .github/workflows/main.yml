@@ -21,10 +21,18 @@ jobs:
       - uses: ./.github/actions/setup-frontend
       - run: pnpm run check
 
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-frontend
+      - run: pnpm run test:coverage
+
   publish:
     name: Build & publish image
     runs-on: ubuntu-latest
-    needs: check
+    needs: [check, test]
     steps:
       - uses: actions/checkout@v4
 
