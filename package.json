@@ -12,6 +12,9 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "check": "pnpm run typecheck && pnpm run lint && pnpm run format:check",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
     "audit:critical": "pnpm audit --audit-level=critical",
     "audit:high": "pnpm audit --audit-level=high"
   },
