@@ -4,6 +4,7 @@ import { PLAYER_ID, DEVELOPER_ID, SUPPORT_ID } from "@/services/mocks/seed"
 import {
   MockRuleError,
   addVersion,
+  acceptPrice,
   approveGame,
   buy,
   currentUser,
@@ -16,13 +17,13 @@ import {
   registerGame,
   resetDb,
   requireRole,
-  setFinalPrice,
   setBanned,
   signIn,
   signOut,
   submitGame,
   suggestPrice,
   startReview,
+  rejectPrice,
   walletOf,
 } from "@/services/mocks/db"
 
@@ -240,9 +241,26 @@ describe("the publishing workflow", () => {
     expect(gameById(id).suggested_price?.amount_minor).toBe("55000000")
 
     signIn("dev@arcadia.local", "dev-password")
-    expect(setFinalPrice(id, 550_000_00).state).toBe("PRICED")
+    expect(acceptPrice(id).state).toBe("PRICED")
+
+    signIn("support@arcadia.local", "support-password")
     expect(publishGame(id).state).toBe("PUBLISHED")
     expect(gameById(id).published_at).not.toBeNull()
+  })
+
+  it("the developer cannot publish — staff confirm the price", () => {
+    const id = draftGame()
+    addVersion(id, "1.0.0", 1024)
+    submitGame(id)
+
+    signIn("support@arcadia.local", "support-password")
+    startReview(id)
+    approveGame(id, "")
+    suggestPrice(id, 100_00)
+
+    signIn("dev@arcadia.local", "dev-password")
+    acceptPrice(id)
+    expect(ruleOf(() => publishGame(id))).toBe("403:ROLE_REQUIRED")
   })
 
   it("publish before pricing is refused", () => {
@@ -253,14 +271,19 @@ describe("the publishing workflow", () => {
     signIn("support@arcadia.local", "support-password")
     startReview(id)
     approveGame(id, "")
-
-    signIn("dev@arcadia.local", "dev-password")
     expect(ruleOf(() => publishGame(id))).toBe("409:NOT_PRICED")
   })
 
   it("a negative price is refused outright", () => {
     const id = draftGame()
-    expect(ruleOf(() => setFinalPrice(id, -1))).toBe("400:VALIDATION_FAILED")
+    addVersion(id, "1.0.0", 1024)
+    submitGame(id)
+    signIn("support@arcadia.local", "support-password")
+    startReview(id)
+    approveGame(id, "")
+    suggestPrice(id, 100_00)
+    signIn("dev@arcadia.local", "dev-password")
+    expect(ruleOf(() => rejectPrice(id, -1))).toBe("400:VALIDATION_FAILED")
   })
 
   it("the published terminal state refuses any further transition", () => {
@@ -272,9 +295,12 @@ describe("the publishing workflow", () => {
     signIn("support@arcadia.local", "support-password")
     startReview(own)
     approveGame(own, "")
+    suggestPrice(own, 100_00)
     signIn("dev@arcadia.local", "dev-password")
-    setFinalPrice(own, 100_00)
+    rejectPrice(own, 100_00)
+    signIn("support@arcadia.local", "support-password")
     publishGame(own)
+    signIn("dev@arcadia.local", "dev-password")
     expect(ruleOf(() => submitGame(own))).toBe("409:ILLEGAL_TRANSITION")
     expect(gameById(id).state).toBe("PUBLISHED")
   })

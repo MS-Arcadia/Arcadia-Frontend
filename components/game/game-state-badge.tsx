@@ -18,7 +18,7 @@ const STATE: Record<GameState, { label: string; tone: keyof typeof TONE }> = {
   APPROVED: { label: "Approved", tone: "good" },
   REJECTED: { label: "Rejected", tone: "bad" },
   APPEALED: { label: "Appealed", tone: "warn" },
-  PRICED: { label: "Priced", tone: "good" },
+  PRICED: { label: "Waiting to publish", tone: "warn" },
   PREORDER: { label: "Pre-order", tone: "info" },
   PUBLISHED: { label: "On sale", tone: "good" },
 }

@@ -14,7 +14,7 @@ describe("GameStateBadge", () => {
       APPROVED: "Approved",
       REJECTED: "Rejected",
       APPEALED: "Appealed",
-      PRICED: "Priced",
+      PRICED: "Waiting to publish",
       PREORDER: "Pre-order",
       PUBLISHED: "On sale",
     }

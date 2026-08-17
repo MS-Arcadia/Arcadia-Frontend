@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   useApproveGameMutation,
+  usePublishGameMutation,
   useRejectGameMutation,
   useReviewQueueQuery,
   useStartReviewMutation,
@@ -57,9 +58,8 @@ export default function ReviewPage() {
       <div>
         <h1 className="text-xl font-semibold">Review queue</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          A decision here decides whether a game can be sold. A rejection has to
-          say why — the developer can appeal it, and an unexplained rejection
-          gives them nothing to answer.
+          Suggest a price, then the developer accepts or counters. Games that
+          already have a price wait here for you to publish.
         </p>
       </div>
 
@@ -99,6 +99,7 @@ function ReviewCard({ game }: { game: Game }) {
   const approve = useApproveGameMutation()
   const reject = useRejectGameMutation()
   const suggest = useSuggestPriceMutation()
+  const publish = usePublishGameMutation()
 
   const [note, setNote] = useState("")
   const [price, setPrice] = useState("")
@@ -107,9 +108,11 @@ function ReviewCard({ game }: { game: Game }) {
     start.isPending ||
     approve.isPending ||
     reject.isPending ||
-    suggest.isPending
+    suggest.isPending ||
+    publish.isPending
   const art = gameArt(game.media)
   const decidable = game.state === "IN_REVIEW"
+  const publishable = game.state === "PRICED"
 
   return (
     <article className="overflow-hidden rounded-xl border border-border bg-card">
@@ -149,13 +152,22 @@ function ReviewCard({ game }: { game: Game }) {
               <span className="text-foreground tabular">
                 {formatMoney(game.suggested_price)}
               </span>
+              {game.final_price && (
+                <>
+                  {" "}
+                  · developer set{" "}
+                  <span className="text-foreground tabular">
+                    {formatMoney(game.final_price)}
+                  </span>
+                </>
+              )}
             </p>
           )}
         </div>
       </div>
 
       <div className="space-y-3 border-t border-border bg-background/40 p-4">
-        {!decidable && (
+        {game.state === "SUBMITTED" || game.state === "APPEALED" ? (
           <div className="flex flex-wrap items-center gap-2">
             <p className="flex-1 text-xs text-muted-foreground">
               Pick it up before deciding, so two people do not review the same
@@ -169,6 +181,25 @@ function ReviewCard({ game }: { game: Game }) {
             >
               {start.isPending && <Loader2 className="size-3.5 animate-spin" />}
               Start review
+            </Button>
+          </div>
+        ) : null}
+
+        {publishable && (
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="flex-1 text-xs text-muted-foreground">
+              The developer has answered the price. Publishing puts it on sale.
+            </p>
+            <Button
+              size="sm"
+              className="min-h-9"
+              disabled={busy}
+              onClick={() => publish.mutate(game.id)}
+            >
+              {publish.isPending && (
+                <Loader2 className="size-3.5 animate-spin" />
+              )}
+              Publish
             </Button>
           </div>
         )}
@@ -276,8 +307,8 @@ function ReviewCard({ game }: { game: Game }) {
             )}
 
             <p className="text-xs text-muted-foreground/70">
-              A suggested price is advice, not a decision — the developer sets
-              the real one.
+              A suggested price is what the developer accepts or counters.
+              Approving without one leaves them waiting.
             </p>
           </>
         )}

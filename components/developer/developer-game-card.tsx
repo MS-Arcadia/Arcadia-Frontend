@@ -13,11 +13,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   useAddVersionMutation,
+  useAcceptPriceMutation,
   useAppealMutation,
   useAttachCoverMutation,
-  usePublishGameMutation,
+  useRejectPriceMutation,
   useRelistGameMutation,
-  useSetPriceMutation,
   useSubmitGameMutation,
   useWithdrawGameMutation,
 } from "@/queries/workflow"
@@ -50,8 +50,8 @@ export function DeveloperGameCard({ game, highlighted = false }: Props) {
   const addVersion = useAddVersionMutation()
   const attachCover = useAttachCoverMutation()
   const submit = useSubmitGameMutation()
-  const setPrice = useSetPriceMutation()
-  const publish = usePublishGameMutation()
+  const acceptPrice = useAcceptPriceMutation()
+  const rejectPrice = useRejectPriceMutation()
   const withdraw = useWithdrawGameMutation()
   const relist = useRelistGameMutation()
   const appeal = useAppealMutation()
@@ -66,8 +66,8 @@ export function DeveloperGameCard({ game, highlighted = false }: Props) {
     addVersion.isPending ||
     attachCover.isPending ||
     submit.isPending ||
-    setPrice.isPending ||
-    publish.isPending ||
+    acceptPrice.isPending ||
+    rejectPrice.isPending ||
     withdraw.isPending ||
     relist.isPending ||
     appeal.isPending
@@ -304,75 +304,65 @@ export function DeveloperGameCard({ game, highlighted = false }: Props) {
           </p>
         )}
 
-        {(game.state === "APPROVED" || game.state === "PRICED") && (
+        {game.state === "APPROVED" && (
           <div className="space-y-3">
-            {game.suggested_price && game.final_price === null && !ownPrice ? (
-              <>
-                <div className="flex flex-wrap items-center gap-3 rounded-lg border border-warning/25 bg-warning/5 p-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium">
-                      Support suggested{" "}
-                      <span className="tabular">
-                        {formatMoney(game.suggested_price)}
-                      </span>
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      You can take that price or set a different one. The
-                      suggestion does not bind you.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Button
-                      size="sm"
-                      className="min-h-9"
-                      disabled={busy}
-                      onClick={() => {
-                        const suggested = game.suggested_price
-                        if (!suggested) return
-                        setPrice.mutate({
-                          gameId: game.id,
-                          amountMinor: Number(suggested.amount_minor),
-                        })
-                      }}
-                    >
-                      {setPrice.isPending ? (
-                        <Loader2 className="size-3.5 animate-spin" />
-                      ) : (
-                        <Check className="size-3.5" />
-                      )}
-                      Use this price
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="min-h-9"
-                      disabled={busy}
-                      onClick={() => setOwnPrice(true)}
-                    >
-                      Set a different price
-                    </Button>
-                  </div>
+            {!game.suggested_price ? (
+              <p className="text-xs text-muted-foreground">
+                Approved. Waiting for Support to suggest a price — you accept
+                it or propose a different one, then staff publish.
+              </p>
+            ) : !ownPrice ? (
+              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-warning/25 bg-warning/5 p-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium">
+                    Support suggested{" "}
+                    <span className="tabular">
+                      {formatMoney(game.suggested_price)}
+                    </span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Accept this price, or reject it and name yours. Staff
+                    publish after you answer.
+                  </p>
                 </div>
-              </>
+                <div className="flex flex-wrap gap-1.5">
+                  <Button
+                    size="sm"
+                    className="min-h-9"
+                    disabled={busy}
+                    onClick={() => acceptPrice.mutate(game.id)}
+                  >
+                    {acceptPrice.isPending ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Check className="size-3.5" />
+                    )}
+                    Accept
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-h-9"
+                    disabled={busy}
+                    onClick={() => setOwnPrice(true)}
+                  >
+                    Reject and set a price
+                  </Button>
+                </div>
+              </div>
             ) : (
               <>
                 <p className="text-xs text-muted-foreground">
-                  Approved. The price is yours to set
-                  {game.suggested_price && (
-                    <>
-                      {" "}
-                      — Support suggested{" "}
-                      <span className="text-foreground tabular">
-                        {formatMoney(game.suggested_price)}
-                      </span>
-                    </>
-                  )}
-                  .
+                  Support suggested{" "}
+                  <span className="text-foreground tabular">
+                    {formatMoney(game.suggested_price)}
+                  </span>
+                  . Name the price you will sell at.
                 </p>
                 <div className="flex flex-wrap items-end gap-2">
                   <div className="min-w-32 flex-1 space-y-1.5">
                     <Label htmlFor={`price-${game.id}`} className="text-xs">
-                      Price
+                      Your price
                     </Label>
                     <Input
                       id={`price-${game.id}`}
@@ -381,45 +371,46 @@ export function DeveloperGameCard({ game, highlighted = false }: Props) {
                       onChange={(event) =>
                         setPriceInput(event.target.value.replace(/[^\d]/g, ""))
                       }
-                      placeholder={game.final_price ? "" : "550000"}
+                      placeholder="550000"
                       className="min-h-9 tabular"
                     />
                   </div>
                   <Button
-                    variant="outline"
                     size="sm"
                     className="min-h-9"
                     disabled={busy || !price}
                     onClick={() =>
-                      setPrice.mutate(
+                      rejectPrice.mutate(
                         { gameId: game.id, amountMinor: Number(price) * 100 },
                         { onSuccess: () => setPriceInput("") }
                       )
                     }
                   >
-                    Set price
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="min-h-9"
-                    disabled={busy || game.final_price === null}
-                    onClick={() => publish.mutate(game.id)}
-                  >
-                    {publish.isPending && (
+                    {rejectPrice.isPending && (
                       <Loader2 className="size-3.5 animate-spin" />
                     )}
-                    Publish
+                    Submit price
                   </Button>
                 </div>
-                {game.final_price === null && (
-                  <p className="text-xs text-muted-foreground/70">
-                    Publishing needs a price first — the catalog refuses
-                    otherwise.
-                  </p>
-                )}
               </>
             )}
           </div>
+        )}
+
+        {game.state === "PRICED" && (
+          <p className="text-xs text-muted-foreground">
+            Price set
+            {game.final_price && (
+              <>
+                {" "}
+                at{" "}
+                <span className="text-foreground tabular">
+                  {formatMoney(game.final_price)}
+                </span>
+              </>
+            )}
+            . Waiting for staff to publish.
+          </p>
         )}
 
         {(game.state === "PUBLISHED" || game.state === "PREORDER") && (

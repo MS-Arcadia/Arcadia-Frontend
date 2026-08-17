@@ -378,6 +378,12 @@ route("post", API.catalog.appeal(":id"), ({ params, body }) =>
 route("post", API.catalog.suggestPrice(":id"), ({ params, body }) =>
   mock.suggestPrice(params[0], Number(body.amount_minor ?? 0))
 )
+route("post", API.catalog.acceptPrice(":id"), ({ params }) =>
+  mock.acceptPrice(params[0])
+)
+route("post", API.catalog.rejectPrice(":id"), ({ params, body }) =>
+  mock.rejectPrice(params[0], Number(body.amount_minor ?? 0))
+)
 route("post", API.catalog.price(":id"), ({ params, body }) =>
   mock.setFinalPrice(params[0], Number(body.amount_minor ?? 0))
 )

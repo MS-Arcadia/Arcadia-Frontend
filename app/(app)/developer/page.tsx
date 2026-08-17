@@ -45,7 +45,6 @@ export default function DeveloperPage() {
     (game) =>
       game.state === "DRAFT" ||
       game.state === "APPROVED" ||
-      game.state === "PRICED" ||
       game.state === "REJECTED" ||
       awaitingDiscount.has(game.id)
   )
@@ -53,7 +52,8 @@ export default function DeveloperPage() {
     (game) =>
       game.state === "SUBMITTED" ||
       game.state === "IN_REVIEW" ||
-      game.state === "APPEALED"
+      game.state === "APPEALED" ||
+      game.state === "PRICED"
   )
   const onSale = selling.filter((game) => !awaitingDiscount.has(game.id))
 
@@ -107,7 +107,7 @@ export default function DeveloperPage() {
           <p className="mt-4 text-sm font-medium">Nothing here yet</p>
           <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
             Register a game, upload a build, and send it for review. Support
-            decides whether it can go on sale; you decide what it costs.
+            suggests a price; you accept or counter; staff publish.
           </p>
         </div>
       )}
@@ -124,7 +124,7 @@ export default function DeveloperPage() {
       />
       <Section
         title="With Support"
-        description="Waiting on a review decision. Nothing for you to do until it comes back."
+        description="Waiting on a review decision, or for staff to publish a priced game."
         games={withSupport}
         focused={focused}
       />

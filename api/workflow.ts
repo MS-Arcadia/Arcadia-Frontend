@@ -6,11 +6,9 @@ import type { Game, GameDetail, Promotion } from "@/types/catalog.api.type"
 import type { Page } from "@/types/common.api.type"
 
 /**
- * Requirement 1.3's publishing workflow, as the catalog exposes it.
+ * Publishing workflow, as the catalog exposes it.
  *
- * Two roles act on the same game in turn — the developer submits, prices and
- * publishes; Support reviews and suggests a price — so the calls are grouped by
- * the endpoint rather than by who makes them, and the screens decide what to show.
+ * Support suggests a price. The developer accepts or counters. Staff publish.
  */
 
 export const workflowKeys = {
@@ -80,6 +78,21 @@ export async function addVersion(
 
 export async function submitGame(gameId: string): Promise<GameDetail> {
   const { data } = await http.post<GameDetail>(API.catalog.submit(gameId))
+  return data
+}
+
+export async function acceptPrice(gameId: string): Promise<GameDetail> {
+  const { data } = await http.post<GameDetail>(API.catalog.acceptPrice(gameId))
+  return data
+}
+
+export async function rejectPrice(
+  gameId: string,
+  amountMinor: number
+): Promise<GameDetail> {
+  const { data } = await http.post<GameDetail>(API.catalog.rejectPrice(gameId), {
+    amount_minor: amountMinor,
+  })
   return data
 }
 

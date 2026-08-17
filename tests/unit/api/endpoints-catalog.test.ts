@@ -21,6 +21,8 @@ import {
   registerGame,
   relistGame,
   rejectGame,
+  rejectPrice,
+  acceptPrice,
   setFinalPrice,
   startReview,
   submitGame,
@@ -192,6 +194,17 @@ describe("workflow endpoints", () => {
     await scripter.call(() => suggestPrice("game-1", 5500000), {
       method: "post",
       url: API.catalog.suggestPrice("game-1"),
+      body: { amount_minor: 5500000 },
+    })
+
+    await scripter.call(() => acceptPrice("game-1"), {
+      method: "post",
+      url: API.catalog.acceptPrice("game-1"),
+    })
+
+    await scripter.call(() => rejectPrice("game-1", 5500000), {
+      method: "post",
+      url: API.catalog.rejectPrice("game-1"),
       body: { amount_minor: 5500000 },
     })
 

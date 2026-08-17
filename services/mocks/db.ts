@@ -1812,7 +1812,25 @@ export function suggestPrice(gameId: string, amountMinor: number): Game {
   return game
 }
 
-export function setFinalPrice(gameId: string, amountMinor: number): Game {
+export function acceptPrice(gameId: string): Game {
+  requireRole("DEVELOPER")
+  const game = ownGame(gameId)
+  if (!game.suggested_price) {
+    throw new MockRuleError(
+      409,
+      "PRICE_NOT_SUGGESTED",
+      "Support must suggest a price first"
+    )
+  }
+  game.final_price = game.suggested_price
+  game.effective_price = game.suggested_price
+  if (game.state === "APPROVED") transition(game, "PRICED")
+  game.updated_at = iso()
+  save()
+  return game
+}
+
+export function rejectPrice(gameId: string, amountMinor: number): Game {
   requireRole("DEVELOPER")
   const game = ownGame(gameId)
   if (amountMinor < 0) {
@@ -1820,6 +1838,13 @@ export function setFinalPrice(gameId: string, amountMinor: number): Game {
       400,
       "VALIDATION_FAILED",
       "A price cannot be negative"
+    )
+  }
+  if (!game.suggested_price) {
+    throw new MockRuleError(
+      409,
+      "PRICE_NOT_SUGGESTED",
+      "Support must suggest a price first"
     )
   }
   const price = money(BigInt(amountMinor))
@@ -1831,9 +1856,34 @@ export function setFinalPrice(gameId: string, amountMinor: number): Game {
   return game
 }
 
-export function publishGame(gameId: string): Game {
+export function setFinalPrice(gameId: string, amountMinor: number): Game {
   requireRole("DEVELOPER")
   const game = ownGame(gameId)
+  if (amountMinor < 0) {
+    throw new MockRuleError(
+      400,
+      "VALIDATION_FAILED",
+      "A price cannot be negative"
+    )
+  }
+  if (game.state !== "PUBLISHED" && game.state !== "PREORDER") {
+    throw new MockRuleError(
+      409,
+      "ILLEGAL_TRANSITION",
+      "The first price is set by accepting or rejecting the suggestion"
+    )
+  }
+  const price = money(BigInt(amountMinor))
+  game.final_price = price
+  game.effective_price = price
+  game.updated_at = iso()
+  save()
+  return game
+}
+
+export function publishGame(gameId: string): Game {
+  requireRole("SUPPORT", "ADMIN")
+  const game = gameById(gameId)
   if (game.final_price === null) {
     throw new MockRuleError(409, "NOT_PRICED", "Set a price before publishing")
   }
@@ -1872,7 +1922,8 @@ export function reviewQueue(): Game[] {
     (game) =>
       game.state === "SUBMITTED" ||
       game.state === "IN_REVIEW" ||
-      game.state === "APPEALED"
+      game.state === "APPEALED" ||
+      game.state === "PRICED"
   )
 }
 

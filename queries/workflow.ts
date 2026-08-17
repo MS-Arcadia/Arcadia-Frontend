@@ -14,6 +14,7 @@ import { notificationKeys } from "@/api/notifications"
 import { isAwaitingDeveloper } from "@/lib/promotion"
 import {
   addVersion,
+  acceptPrice,
   appealRejection,
   approveGame,
   attachCover,
@@ -25,6 +26,7 @@ import {
   publishGame,
   registerGame,
   rejectGame,
+  rejectPrice,
   relistGame,
   setFinalPrice,
   startReview,
@@ -155,11 +157,26 @@ export function useSubmitGameMutation() {
   )
 }
 
+export function useAcceptPriceMutation() {
+  return useWorkflowMutation(
+    (gameId: string) => acceptPrice(gameId),
+    (game) => `Accepted the suggested price for ${game.title}`
+  )
+}
+
+export function useRejectPriceMutation() {
+  return useWorkflowMutation(
+    (args: { gameId: string; amountMinor: number }) =>
+      rejectPrice(args.gameId, args.amountMinor),
+    (game) => `Proposed a new price for ${game.title}`
+  )
+}
+
 export function useSetPriceMutation() {
   return useWorkflowMutation(
     (args: { gameId: string; amountMinor: number }) =>
       setFinalPrice(args.gameId, args.amountMinor),
-    (game) => `Price set for ${game.title}`
+    (game) => `Price updated for ${game.title}`
   )
 }
 
