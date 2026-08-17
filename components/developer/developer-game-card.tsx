@@ -308,8 +308,8 @@ export function DeveloperGameCard({ game, highlighted = false }: Props) {
           <div className="space-y-3">
             {!game.suggested_price ? (
               <p className="text-xs text-muted-foreground">
-                Approved. Waiting for Support to suggest a price — you accept
-                it or propose a different one, then staff publish.
+                Approved. Waiting for Support to suggest a price — you accept it
+                or propose a different one, then staff publish.
               </p>
             ) : !ownPrice ? (
               <div className="flex flex-wrap items-center gap-3 rounded-lg border border-warning/25 bg-warning/5 p-3">

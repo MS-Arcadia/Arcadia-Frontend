@@ -90,9 +90,12 @@ export async function rejectPrice(
   gameId: string,
   amountMinor: number
 ): Promise<GameDetail> {
-  const { data } = await http.post<GameDetail>(API.catalog.rejectPrice(gameId), {
-    amount_minor: amountMinor,
-  })
+  const { data } = await http.post<GameDetail>(
+    API.catalog.rejectPrice(gameId),
+    {
+      amount_minor: amountMinor,
+    }
+  )
   return data
 }
 
