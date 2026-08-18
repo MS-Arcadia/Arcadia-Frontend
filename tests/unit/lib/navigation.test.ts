@@ -19,6 +19,7 @@ describe("navFor", () => {
     expect(navFor("SUPPORT").map((item) => item.href)).toEqual([
       "/review",
       "/community-reports",
+      "/review-reports",
       "/gift-cards",
     ])
   })
@@ -27,6 +28,7 @@ describe("navFor", () => {
     expect(navFor("ADMIN").map((item) => item.href)).toEqual([
       "/review",
       "/community-reports",
+      "/review-reports",
       "/gift-cards",
       "/admin",
     ])
