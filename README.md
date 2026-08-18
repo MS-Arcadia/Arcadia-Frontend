@@ -119,13 +119,13 @@ whether to sign up.
 
 ## Use cases by role
 
-| Role | Can do |
-|---|---|
-| **Visitor** | Browse the catalogue, read one game, read the community and festivals, create an account |
-| **Basic user** | + buy, gift, pre-order, pay in instalments, top up, redeem gift cards, review, post, comment, react, trade items, manage a profile |
-| **Developer** | + register a game, upload art and builds, submit for review, accept a suggested price, publish, withdraw, approve or reject festival discounts |
-| **Support** | + work the review queue, approve/reject/suggest a price, issue gift cards, moderate posts and reviews |
-| **Admin** | + approve registrations, grant roles, ban and unban, create and run festivals |
+| Role           | Can do                                                                                                                                         |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Visitor**    | Browse the catalogue, read one game, read the community and festivals, create an account                                                       |
+| **Basic user** | + buy, gift, pre-order, pay in instalments, top up, redeem gift cards, review, post, comment, react, trade items, manage a profile             |
+| **Developer**  | + register a game, upload art and builds, submit for review, accept a suggested price, publish, withdraw, approve or reject festival discounts |
+| **Support**    | + work the review queue, approve/reject/suggest a price, issue gift cards, moderate posts and reviews                                          |
+| **Admin**      | + approve registrations, grant roles, ban and unban, create and run festivals                                                                  |
 
 Gating is for **tidiness, not security**. Each page checks the role to decide what to show,
 and every service checks the token independently — so a hand-typed URL gets an explanation
@@ -156,7 +156,7 @@ Ten of the gateway's twelve prefixes are called from here. The two that are not:
 
 - **media-service** — nothing here uploads a file directly. Game art arrives already-signed
   inside a game's `media[]`.
-- **payment-service** — reached by *redirect*, not by call. A top-up answers with a
+- **payment-service** — reached by _redirect_, not by call. A top-up answers with a
   `redirect_url` and the browser follows it to the bank.
 
 ### Two rules that are load-bearing
@@ -178,21 +178,21 @@ refused after twelve hours — and a write to `/wallet/*` or `/orders/*` without
 
 ## Tech stack
 
-| Concern | Choice |
-|---|---|
-| Framework | Next.js 16 (App Router, Turbopack, React Compiler) |
-| Language | TypeScript 5, strict, `target: ES2020` for BigInt |
-| UI | React 19 |
-| Styling | Tailwind CSS v4 + CSS variables |
-| Primitives | shadcn/ui `base-nova` — built on **Base UI**, not Radix |
-| Server state | TanStack Query v5 |
-| Client state | Zustand v5 |
-| Forms | React Hook Form + Zod |
-| HTTP | Axios, one instance |
-| Icons | lucide-react |
-| Animation | motion |
-| Toasts | sonner |
-| Package manager | pnpm |
+| Concern         | Choice                                                  |
+| --------------- | ------------------------------------------------------- |
+| Framework       | Next.js 16 (App Router, Turbopack, React Compiler)      |
+| Language        | TypeScript 5, strict, `target: ES2020` for BigInt       |
+| UI              | React 19                                                |
+| Styling         | Tailwind CSS v4 + CSS variables                         |
+| Primitives      | shadcn/ui `base-nova` — built on **Base UI**, not Radix |
+| Server state    | TanStack Query v5                                       |
+| Client state    | Zustand v5                                              |
+| Forms           | React Hook Form + Zod                                   |
+| HTTP            | Axios, one instance                                     |
+| Icons           | lucide-react                                            |
+| Animation       | motion                                                  |
+| Toasts          | sonner                                                  |
+| Package manager | pnpm                                                    |
 
 Base UI rather than Radix has two consequences that bite: there is no `form.tsx` (the
 equivalent is `field.tsx`), and composition uses a `render` prop rather than `asChild` — a
