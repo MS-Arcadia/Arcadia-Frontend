@@ -88,6 +88,34 @@ export async function reactToReview(
   return data
 }
 
+export interface ReviewReport {
+  id: string
+  review_id: string
+  reporter_id: string
+  reason: string
+  status: string
+  created_at: string | null
+  resolved_at: string | null
+}
+
+export interface ReviewReportListResponse {
+  reports: ReviewReport[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export async function getOpenReviewReports(
+  limit = 20,
+  offset = 0
+): Promise<ReviewReportListResponse> {
+  const { data } = await http.get<ReviewReportListResponse>(
+    API.reviews.openReports,
+    { params: { limit, offset } }
+  )
+  return data
+}
+
 /** Support/Admin only. */
 export async function resolveReviewReport(
   reviewId: string,

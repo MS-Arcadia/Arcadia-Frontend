@@ -1,6 +1,7 @@
 import {
   Bell,
   ClipboardCheck,
+  Flag,
   Gamepad2,
   Gift,
   LibraryBig,
@@ -61,6 +62,12 @@ export const STAFF_NAV: NavItem[] = [
     href: "/community-reports",
     label: "Community reports",
     icon: MessagesSquare,
+    roles: ["SUPPORT", "ADMIN"],
+  },
+  {
+    href: "/review-reports",
+    label: "Review reports",
+    icon: Flag,
     roles: ["SUPPORT", "ADMIN"],
   },
   {

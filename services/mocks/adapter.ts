@@ -682,11 +682,10 @@ route("post", API.reviews.react(":id"), ({ params, body }) => {
   mock.reactToUserReview(params[0], reactionType)
   return { message: `Reaction ${reactionType} added successfully` }
 })
-// Support/Admin only, per the real endpoint — but review-service's own API has
-// no route to *discover* an open report's id, so nothing in this app's UI
-// calls this today (see the frontend's known-gaps note). Registered anyway,
-// against whatever report id a caller already has out of band, so the
-// endpoint behaves correctly the day a listing route exists to drive it.
+route("get", API.reviews.openReports, () => {
+  mock.requireRole("SUPPORT", "ADMIN")
+  return { reports: [], total: 0, page: 1, page_size: 20 }
+})
 route(
   "post",
   API.reviews.resolveReport(":id", ":reportId"),

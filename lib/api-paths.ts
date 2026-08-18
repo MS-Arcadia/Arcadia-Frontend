@@ -150,6 +150,7 @@ export const API = {
     react: (id: string) => `/reviews/api/reviews/${id}/react`,
     resolveReport: (reviewId: string, reportId: string) =>
       `/reviews/api/reviews/${reviewId}/reports/${reportId}/resolve`,
+    openReports: "/reviews/api/reviews/reports",
   },
   festivals: {
     list: "/festivals/v1/festivals",
