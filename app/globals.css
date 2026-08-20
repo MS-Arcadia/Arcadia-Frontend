@@ -40,7 +40,24 @@
 
 @property --brand-hue {
   syntax: "<number>";
-  inherits: true;
+  /* Not inherited, and that is load-bearing rather than a detail.
+
+     An inherited animated custom property makes every descendant a participant in
+     the animation, so `element.getAnimations()` returns the infinite `brand-drift`
+     for *any* node in the document. Base UI closes a popup by awaiting
+     `Promise.all(el.getAnimations().map(a => a.finished))` — see
+     `internals/useAnimationsFinished.mjs` — and an infinite alternating animation
+     never resolves `finished`. Every dropdown, dialog and select stayed mounted
+     after being dismissed.
+
+     It reproduced only in Chrome because Firefox does not currently report an
+     inherited custom-property animation on descendants, so the promise resolved
+     there and the popup closed.
+
+     With `inherits: false` the animation stays registered on `html` alone. The
+     colour still reaches everything: `--ring` and `--primary` below read
+     `--brand-hue` on `:root`, and *their* computed values inherit normally. */
+  inherits: false;
   initial-value: 352;
 }
 

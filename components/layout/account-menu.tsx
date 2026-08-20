@@ -53,7 +53,7 @@ export function AccountMenu() {
     <div className="flex items-center gap-0.5">
       {/* Avatar – navigates to profile */}
       <Link
-        href="/profile"
+        href={`/profile/${user.user_id}`}
         aria-label={`${user.display_name}, profile`}
         className="rounded-full transition-colors hover:bg-muted"
       >
@@ -98,7 +98,9 @@ export function AccountMenu() {
           {/* Group: navigation items */}
           <DropdownMenuGroup>
             {/* Profile is already accessible via avatar click; you may keep or remove it */}
-            <DropdownMenuItem render={<Link href="/profile" />}>
+            <DropdownMenuItem
+              render={<Link href={`/profile/${user.user_id}`} />}
+            >
               <UserRound className="size-4" />
               Profile
             </DropdownMenuItem>
